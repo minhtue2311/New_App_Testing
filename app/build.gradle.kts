@@ -33,8 +33,10 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    buildFeatures {
+        viewBinding = true
+    }
 }
-
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -45,4 +47,15 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+
+    //recyclerView
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.recyclerview:recyclerview-selection:1.1.0")
+
+    //roomDatabase
+    annotationProcessor("android.arch.persistence.room:compiler:1.1.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+
 }

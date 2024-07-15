@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+    <item
+        android:id="@+id/note"
+        android:icon="@drawable/notes"
+        android:title="Notes" />
+    <group android:checkableBehavior="single">
+        <item
+            android:title="Category">
+        <menu>
+            <item
+                android:id="@+id/categories"
+                android:icon="@drawable/category"
+                android:title="Edit Category" />
+        </menu>
+        </item>
+    </group>
+    <group android:checkableBehavior="single">
+        <item
+            android:title="Other"
+            >
+            <menu>
+                <item
+                    android:id="@+id/delete"
+                    android:icon="@drawable/delete"
+                    android:title="Trash" />
+                <item
+                    android:id="@+id/setting"
+                    android:icon="@drawable/settings"
+                    android:title="Settings" />
+            </menu>
+        </item>
+    </group>
+</menu>
