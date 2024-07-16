@@ -109,6 +109,7 @@
             </LinearLayout>
         </FrameLayout>
         <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewNote"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_constraintTop_toBottomOf="@id/frameLayout1"

@@ -49,9 +49,10 @@
         android:fontFamily="sans-serif-condensed-medium"/>
 </LinearLayout>
 <ScrollView
+    android:id="@+id/scrollViewLayout"
     android:background="@color/white"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -70,7 +71,6 @@
             android:id="@+id/editTextContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:singleLine="true"
             android:textSize="18sp"
             android:hint="@string/enter_text"
             android:fontFamily="sans-serif-condensed"

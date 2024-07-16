@@ -5,13 +5,13 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "Note")
-class Note(title: String, content: String, color : String) : java.io.Serializable {
+class Note(title: String, content: String, lastTimeEdited : String) : java.io.Serializable {
     @PrimaryKey(autoGenerate = true)
     private var id: Int? = 0
     private var title : String? = title
     private var content : String? = content
-    private var color : String? = color
-    private var categoriesId : Int? = null
+    private var color : String = ""
+    private var lastTimeEdited : String? = lastTimeEdited
     fun getId(): Int {
         return id!!
     }
@@ -35,12 +35,12 @@ class Note(title: String, content: String, color : String) : java.io.Serializabl
         this.color = color
     }
     fun getColor(): String{
-        return color!!
+        return color
     }
-    fun setCategories(categories : Int){
-        this.categoriesId = categories
+    fun setDay(time : String){
+        this.lastTimeEdited = time
     }
-    fun getCategories() : Int{
-        return categoriesId!!
+    fun getLastTimeEdited() : String{
+        return lastTimeEdited!!
     }
 }
