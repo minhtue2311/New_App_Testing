@@ -26,7 +26,13 @@ class NoteFragment : Fragment() {
         viewBinding.btnOpenClose.setOnClickListener {
             viewBinding.drawerLayout.openDrawer(viewBinding.navView)
         }
-        return viewBinding.root
+        viewBinding.btnCreate.setOnClickListener{
 
+        }
+        return viewBinding.root
+    }
+    fun changeToDetailFragment(){
+        val detailFragment = DetailNoteFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
     }
 }

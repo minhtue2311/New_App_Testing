@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/detailFragmentLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:orientation="horizontal"
+    android:background="@color/theme_background">
+    <ImageButton
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:id="@+id/back"
+        android:elevation="5dp"
+        android:layout_margin="10dp"
+        android:background="@drawable/baseline_arrow_back_24"
+        android:backgroundTint="@color/white"/>
+    <TextView
+        android:id="@+id/txtName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textColor="@color/white"
+        android:text="@string/notepad"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="20dp"
+        android:fontFamily="sans-serif-condensed-medium"/>
+    <TextView
+        android:id="@+id/txtSave"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textColor="@color/white"
+        android:text="@string/save"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="100dp"
+        android:fontFamily="sans-serif-condensed"/>
+    <TextView
+        android:id="@+id/txtUndo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textColor="#A8A5A5"
+        android:text="@string/undo"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="20dp"
+        android:fontFamily="sans-serif-condensed-medium"/>
+</LinearLayout>
+<ScrollView
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <EditText
+            android:id="@+id/editTextTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textSize="20sp"
+            android:hint="@string/enter_title"
+            android:fontFamily="sans-serif-condensed"
+            android:textColor="@color/black"
+            android:layout_margin="5dp"/>
+        <EditText
+            android:id="@+id/editTextContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textSize="18sp"
+            android:hint="@string/enter_text"
+            android:fontFamily="sans-serif-condensed"
+            android:textColor="@color/black"
+            android:layout_margin="5dp"/>
+    </LinearLayout>
+</ScrollView>
+
+</LinearLayout>

@@ -3,4 +3,8 @@
     <string name="notepad">Notepad</string>
     <string name="sort">Sort</string>
     <string name="floattingButton">FloatButton</string>
+    <string name="save">SAVE</string>
+    <string name="undo">UNDO</string>
+    <string name="enter_title">Enter Title</string>
+    <string name="enter_text">Enter text</string>
 </resources>
