@@ -2,6 +2,8 @@ package com.example.myapplication.note
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +14,7 @@ import com.example.myapplication.R
 import com.example.myapplication.adapter.AdapterRecyclerViewNote
 import com.example.myapplication.databinding.LayoutNoteFragmentBinding
 import com.example.myapplication.model.Note
+import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.note.noteViewModel.NoteViewModel
 
 class NoteFragment : Fragment() {
@@ -38,12 +41,33 @@ class NoteFragment : Fragment() {
             viewBinding.drawerLayout.openDrawer(viewBinding.navView)
         }
         viewBinding.btnCreate.setOnClickListener{
-            changeToDetailFragment()
+            changeToCreateNoteFragment()
         }
         setUpRecyclerView()
         getData()
+        searchNote()
         return viewBinding.root
     }
+
+    private fun searchNote() {
+        viewBinding.searchBar.addTextChangedListener(object : TextWatcher{
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                TODO("Not yet implemented")
+            }
+
+            @SuppressLint("NotifyDataSetChanged")
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                adapter.getFilter().filter(p0.toString())
+                adapter.notifyDataSetChanged()
+            }
+
+            override fun afterTextChanged(p0: Editable?) {
+                TODO("Not yet implemented")
+            }
+        })
+
+    }
+
     @SuppressLint("NotifyDataSetChanged")
     private fun getData(){
         viewModel.getLiveDataNote(requireContext()).observe(viewLifecycleOwner){
@@ -67,14 +91,28 @@ class NoteFragment : Fragment() {
         viewBinding.recyclerViewNote.setHasFixedSize(false)
         listNote = ArrayList()
         val linearLayout = LinearLayoutManager(requireContext())
-        adapter = AdapterRecyclerViewNote(listNote)
+        adapter = AdapterRecyclerViewNote(listNote, object : InterfaceOnClickListener{
+            override fun onClickItemNoteListener(note: Note) {
+                changeToDetailNoteFragment(note)
+            }
+        }, requireContext())
         viewBinding.recyclerViewNote.layoutManager = linearLayout
         viewBinding.recyclerViewNote.adapter = adapter
     }
 
-    private fun changeToDetailFragment(){
+    private fun changeToCreateNoteFragment(){
         val detailFragment = DetailNoteFragment()
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.add(R.id.mainLayout, detailFragment)
+        fragmentTrans.addToBackStack(null)
+        fragmentTrans.commit()
+    }
+    private fun changeToDetailNoteFragment(note : Note){
+        val detailFragment = DetailNoteFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        val bundle = Bundle()
+        bundle.putParcelable("Note", note)
+        detailFragment.arguments = bundle
         fragmentTrans.add(R.id.mainLayout, detailFragment)
         fragmentTrans.addToBackStack(null)
         fragmentTrans.commit()

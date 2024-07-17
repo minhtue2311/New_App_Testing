@@ -1,46 +1,54 @@
 package com.example.myapplication.model
 
 
+import android.os.Parcel
+import android.os.Parcelable
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "Note")
-class Note(title: String, content: String, lastTimeEdited : String) : java.io.Serializable {
+class Note(
+    var title: String,
+    var content: String,
+    var lastTimeEdited: String
+) : Parcelable {
+
     @PrimaryKey(autoGenerate = true)
-    private var id: Int? = 0
-    private var title : String? = title
-    private var content : String? = content
-    private var color : String = ""
-    private var lastTimeEdited : String? = lastTimeEdited
-    fun getId(): Int {
-        return id!!
+    var id: Int? = null
+    var color: String = ""
+    var label : String = ""
+
+    constructor(parcel: Parcel) : this(
+        parcel.readString() ?: "",
+        parcel.readString() ?: "",
+        parcel.readString() ?: ""
+    ) {
+        id = parcel.readValue(Int::class.java.classLoader) as? Int
+        color = parcel.readString() ?: ""
+        label = parcel.readString() ?: ""
     }
 
-    fun setId(id: Int) {
-        this.id = id
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(title)
+        parcel.writeString(content)
+        parcel.writeString(lastTimeEdited)
+        parcel.writeValue(id)
+        parcel.writeString(color)
+        parcel.writeString(label)
     }
-    fun getTitle() : String{
-        return title!!
+
+    override fun describeContents(): Int {
+        return 0
     }
-    fun getContent() : String{
-        return content!!
-    }
-    fun setTitle(title : String){
-        this.title = title
-    }
-    fun setContent(content : String){
-        this.content = content
-    }
-    fun setColor(color : String){
-        this.color = color
-    }
-    fun getColor(): String{
-        return color
-    }
-    fun setDay(time : String){
-        this.lastTimeEdited = time
-    }
-    fun getLastTimeEdited() : String{
-        return lastTimeEdited!!
+
+    companion object CREATOR : Parcelable.Creator<Note> {
+        override fun createFromParcel(parcel: Parcel): Note {
+            return Note(parcel)
+        }
+
+        override fun newArray(size: Int): Array<Note?> {
+            return arrayOfNulls(size)
+        }
     }
 }

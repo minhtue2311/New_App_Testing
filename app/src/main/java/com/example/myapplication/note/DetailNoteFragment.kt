@@ -29,6 +29,7 @@ class DetailNoteFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         viewBinding = LayoutDetailNoteBinding.inflate(inflater, container, false)
+        getData()
         noteDatabase = NoteDatabase.getInstance(requireContext())
         viewBinding.scrollViewLayout.setOnClickListener {
             //TO DO
@@ -53,8 +54,32 @@ class DetailNoteFragment : Fragment() {
                     noteDatabase.noteDao().insertNote(noteModel)
                     Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
                 }
+                "Update" -> {
+                    val titleValue = viewBinding.editTextTitle.text.toString()
+                    val contentValue = viewBinding.editTextContent.text.toString()
+                    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    val dateString = sdf.format(Date())
+                    note?.apply {
+                        title = titleValue
+                        content = contentValue
+                        lastTimeEdited = dateString
+                    }
+                    note?.let { noteDatabase.noteDao().updateNote(it) }
+                }
             }
         }
         return viewBinding.root
+    }
+    private fun getData(){
+        val bundle = arguments
+        if(bundle != null) {
+            note = bundle.getParcelable<Note>("Note")
+            bindData()
+            type = "Update"
+        }
+    }
+    private fun bindData(){
+        viewBinding.editTextTitle.setText(note?.title.toString())
+        viewBinding.editTextContent.setText(note?.content.toString())
     }
 }
