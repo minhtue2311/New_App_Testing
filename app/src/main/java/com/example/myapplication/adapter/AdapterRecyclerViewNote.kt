@@ -82,7 +82,7 @@ class ViewHolderNote(private var viewBinding : CustomItemRecyclerViewBinding) : 
             viewBinding.title.text = note.title
             note.label = note.title
         }
-        viewBinding.dayEdited.text = context.getString(R.string.last_edited)  + note.lastTimeEdited
+        viewBinding.dayEdited.text = context.getString(R.string.last_edited)  + note.editedDate
     }
     fun getViewBinding() : CustomItemRecyclerViewBinding{
         return viewBinding

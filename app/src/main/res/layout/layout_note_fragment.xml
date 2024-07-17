@@ -114,7 +114,6 @@
             android:layout_height="match_parent"
             app:layout_constraintTop_toBottomOf="@id/frameLayout1"
             android:layout_marginTop="50dp"
-            android:padding="10dp"
             app:layout_constraintStart_toStartOf="parent"/>
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnCreate"
@@ -137,6 +136,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/custom_nav_header"
+        android:backgroundTint="@color/colorItem"
         app:menu="@menu/nav_menu"/>
 
 

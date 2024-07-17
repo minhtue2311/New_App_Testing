@@ -4,4 +4,5 @@ import com.example.myapplication.model.Note
 
 interface InterfaceOnClickListener {
     fun onClickItemNoteListener(note : Note)
+    fun onClickColorItem(color : String)
 }

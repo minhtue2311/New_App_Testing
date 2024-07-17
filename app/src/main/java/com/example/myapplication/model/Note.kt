@@ -11,7 +11,8 @@ import androidx.room.PrimaryKey
 class Note(
     var title: String,
     var content: String,
-    var lastTimeEdited: String
+    var createDate: String,
+    var editedDate : String
 ) : Parcelable {
 
     @PrimaryKey(autoGenerate = true)
@@ -20,6 +21,7 @@ class Note(
     var label : String = ""
 
     constructor(parcel: Parcel) : this(
+        parcel.readString() ?: "",
         parcel.readString() ?: "",
         parcel.readString() ?: "",
         parcel.readString() ?: ""
@@ -32,7 +34,8 @@ class Note(
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(title)
         parcel.writeString(content)
-        parcel.writeString(lastTimeEdited)
+        parcel.writeString(createDate)
+        parcel.writeString(editedDate)
         parcel.writeValue(id)
         parcel.writeString(color)
         parcel.writeString(label)

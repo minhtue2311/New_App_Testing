@@ -9,4 +9,26 @@
     <string name="enter_text">Enter text</string>
     <string name="title">Title</string>
     <string name="last_edited">Last Edited:</string>
+    <string name="sort_by">Sort By</string>
+    <string name="edit_date_from_newest">edit date: from newest</string>
+    <string name="edit_date_from_oldest">edit date: from oldest</string>
+    <string name="title_a_to_z">title: A to Z</string>
+    <string name="title_z_to_a">title: Z to A</string>
+    <string name="creation_date_from_newest">creation date: from newest</string>
+    <string name="creation_date_from_oldest">creation date: from oldest</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="categorize">Categorize</string>
+    <string name="colorize">Colorize</string>
+    <string name="show_info">Show Info</string>
+    <string name="words">Words:</string>
+    <string name="characters">Characters:</string>
+    <string name="characters_without_whitespaces">Characters without whitespaces :</string>
+    <string name="created_at">Created at:</string>
+    <string name="last_saved_at">Last saved at:</string>
+    <string name="line_count">Line Count:</string>
+    <string name="ok">OK</string>
+    <string name="select_color">Select Color</string>
+    <string name="set_color">Set Color</string>
+    <string name="remove_color">Remove Color</string>
 </resources>
