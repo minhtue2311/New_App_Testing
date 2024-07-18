@@ -7,11 +7,13 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,12 +24,17 @@ import com.example.myapplication.databinding.LayoutNoteFragmentBinding
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.note.noteViewModel.NoteViewModel
+import com.example.myapplication.preferences.NoteStatusPreferences
+import java.util.Stack
+
 @SuppressLint("NotifyDataSetChanged")
 class NoteFragment : Fragment() {
     private lateinit var viewBinding : LayoutNoteFragmentBinding
     private lateinit var listNote : ArrayList<Note>
     private lateinit var adapter : AdapterRecyclerViewNote
     private lateinit var viewModel : NoteViewModel
+    private lateinit var preferences : NoteStatusPreferences
+    private var statusSort : String? = null
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -35,6 +42,8 @@ class NoteFragment : Fragment() {
     ): View? {
         viewBinding = LayoutNoteFragmentBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
+        preferences = NoteStatusPreferences(requireContext())
+        statusSort = preferences.getStatusSortValues()
         viewBinding.searchButton.setOnClickListener {
             viewBinding.layoutMainToolBar.visibility = View.GONE
             viewBinding.layoutSearchToolBar.visibility = View.VISIBLE
@@ -42,6 +51,7 @@ class NoteFragment : Fragment() {
         viewBinding.back.setOnClickListener {
             viewBinding.layoutMainToolBar.visibility = View.VISIBLE
             viewBinding.layoutSearchToolBar.visibility = View.GONE
+            viewBinding.searchBar.text.clear()
         }
         viewBinding.btnOpenClose.setOnClickListener {
             viewBinding.drawerLayout.openDrawer(viewBinding.navView)
@@ -56,6 +66,22 @@ class NoteFragment : Fragment() {
         getData()
         searchNote()
         return viewBinding.root
+    }
+    private fun checkStatusSort() {
+        if(statusSort != null){
+            when(statusSort){
+                "A->Z" -> {
+                    sortByAToZ()
+                }
+                "Z->A" -> {
+                    sortByZtoA()
+                }
+                "NewestDateCreated" -> {sortByNewestDate()}
+                "OldestDateCreated" -> {sortByOldestDate()}
+                "NewestDateEdited" -> {sortByNewestEditDay()}
+                "OldestDateEdited" ->{sortByOldestEditDay()}
+            }
+        }
     }
 
     private fun searchNote() {
@@ -92,6 +118,7 @@ class NoteFragment : Fragment() {
                 }
             }
             adapter.notifyDataSetChanged()
+            checkStatusSort()
         }
     }
 
@@ -144,24 +171,38 @@ class NoteFragment : Fragment() {
         binding.btnCancel.setOnClickListener {
             dialog.cancel()
         }
+        val status = preferences.getStatusSortValues()
+        when(status){
+            "A->Z" -> {binding.rbTitleAtoZ.isChecked = true}
+            "Z->A" -> {binding.rbTitleZtoA.isChecked = true}
+            "NewestDateCreated" -> {binding.rbFromNewestDate.isChecked = true}
+            "OldestDateCreated" -> {binding.rbFromOldestDate.isChecked = true}
+            "NewestDateEdited" -> {binding.rbEditDateNewest.isChecked = true}
+            "OldestDateEdited" ->{binding.rbEditDateOldest.isChecked = true}
+        }
         binding.btnSort.setOnClickListener {
             if(binding.rbEditDateNewest.isChecked){
                 sortByNewestEditDay()
+                preferences.putStatusSortValues("NewestDateEdited")
             }else if(binding.rbEditDateOldest.isChecked){
                 sortByOldestEditDay()
+                preferences.putStatusSortValues("OldestDateEdited")
             }else if(binding.rbTitleAtoZ.isChecked){
                 sortByAToZ()
+                preferences.putStatusSortValues("A->Z")
             }else if(binding.rbTitleZtoA.isChecked){
                 sortByZtoA()
+                preferences.putStatusSortValues("Z->A")
             }else if(binding.rbFromNewestDate.isChecked){
                 sortByNewestDate()
+                preferences.putStatusSortValues("NewestDateCreated")
             }else if(binding.rbFromOldestDate.isChecked){
                 sortByOldestDate()
+                preferences.putStatusSortValues("OldestDateCreated")
             }
             dialog.cancel()
         }
     }
-
     private fun sortByOldestDate() {
         listNote.sortWith(Comparator{h1,h2 ->
             h1.createDate.compareTo(h2.createDate)
@@ -184,9 +225,9 @@ class NoteFragment : Fragment() {
     }
 
     private fun sortByAToZ() {
-        listNote.sortWith(Comparator{h1,h2 ->
+        listNote.sortWith { h1, h2 ->
             h1.label.lowercase().compareTo(h2.label.lowercase())
-        })
+        }
         adapter.notifyDataSetChanged()
     }
 

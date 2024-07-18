@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 <LinearLayout
+    android:id="@+id/layoutTitle"
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:orientation="horizontal"
@@ -40,7 +41,7 @@
         android:layout_marginStart="100dp"
         android:fontFamily="sans-serif-condensed"/>
     <Button
-        android:id="@+id/txtUndo"
+        android:id="@+id/btnUndo"
         android:background="@null"
         android:layout_width="@dimen/_40sdp"
         android:layout_height="@dimen/_40sdp"

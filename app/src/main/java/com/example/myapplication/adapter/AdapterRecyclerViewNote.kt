@@ -2,9 +2,13 @@ package com.example.myapplication.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Filter
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.databinding.CustomItemRecyclerViewBinding
@@ -70,19 +74,16 @@ class AdapterRecyclerViewNote(private var listNote : ArrayList<Note>, private va
 class ViewHolderNote(private var viewBinding : CustomItemRecyclerViewBinding) : RecyclerView.ViewHolder(viewBinding.root){
     @SuppressLint("SetTextI18n")
     fun bindData(note : Note, context : Context){
-        if(note.title == "" && note.content == ""){
-            viewBinding.title.text = "Untitled"
-            note.label = "Untitled"
-        }
-        else if(note.title == "" && note.content != ""){
-            viewBinding.title.text = note.content
-            note.label = note.content
-        }
-        else {
-            viewBinding.title.text = note.title
-            note.label = note.title
-        }
+       viewBinding.title.text = note.label
         viewBinding.dayEdited.text = context.getString(R.string.last_edited)  + note.editedDate
+        if(note.color != ""){
+            val drawable = ContextCompat.getDrawable(context, R.drawable.border_cardview_background)
+                ?.mutate() as GradientDrawable  //make clone of drawable for not changing the original drawable
+            drawable.setColor(Color.parseColor(note.color))
+            viewBinding.linearLayoutItem.background = drawable
+        }else {
+            viewBinding.linearLayoutItem.setBackgroundResource(R.drawable.border_cardview_background)
+        }
     }
     fun getViewBinding() : CustomItemRecyclerViewBinding{
         return viewBinding
