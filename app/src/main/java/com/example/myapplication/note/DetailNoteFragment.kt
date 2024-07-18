@@ -41,6 +41,7 @@ class DetailNoteFragment : Fragment() {
     private var undoStack : Stack<String> = Stack()
     private var rootValue : String = ""
     private var isChangingCharacter = false
+    private var isCreatedData = false
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -53,7 +54,9 @@ class DetailNoteFragment : Fragment() {
             //TO DO
         }
         viewBinding.back.setOnClickListener {
-            handleSavingData()
+            if(!isCreatedData) {
+                handleSavingData()
+            }
             requireActivity().supportFragmentManager.popBackStack()
         }
         viewBinding.txtSave.setOnClickListener {
@@ -96,6 +99,7 @@ class DetailNoteFragment : Fragment() {
                     noteModel.label = title
                 }
                 noteDatabase.noteDao().insertNote(noteModel)
+                isCreatedData = true
                 Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
             }
 
@@ -133,6 +137,9 @@ class DetailNoteFragment : Fragment() {
             note = bundle.getParcelable<Note>("Note")
             bindData()
             type = "Update"
+        }else{
+            viewBinding.linearLayoutDetailNote.setBackgroundColor(resources.getColor(R.color.colorItem))
+            viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
         }
     }
 
