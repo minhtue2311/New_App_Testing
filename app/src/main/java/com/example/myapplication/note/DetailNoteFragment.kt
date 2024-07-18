@@ -6,6 +6,7 @@ import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -101,8 +102,9 @@ class DetailNoteFragment : Fragment() {
         viewBinding.editTextContent.setText(note?.content.toString())
         if(note?.color != ""){
             viewBinding.linearLayoutDetailNote.setBackgroundColor(Color.parseColor(note?.color))
+        }else{
+            viewBinding.linearLayoutDetailNote.setBackgroundColor(Color.WHITE)
         }
-        viewBinding.linearLayoutDetailNote.setBackgroundColor(Color.WHITE)
     }
 
     private fun showPopupMenu(view: View) {
@@ -220,6 +222,7 @@ class DetailNoteFragment : Fragment() {
             binding.txtSelectColor.setBackgroundColor(Color.WHITE)
         }
         binding.btnOk.setOnClickListener {
+            Log.d("Color Instant : ", colorInstant)
             note?.color = colorInstant
             note?.let { noteDatabase.noteDao().updateNote(it)}
             viewBinding.linearLayoutDetailNote.setBackgroundColor(Color.parseColor(colorInstant))

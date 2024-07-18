@@ -104,6 +104,10 @@ class NoteFragment : Fragment() {
             override fun onClickItemNoteListener(note: Note) {
                 changeToDetailNoteFragment(note)
             }
+
+            override fun onClickColorItem(color: String) {
+
+            }
         }, requireContext())
         viewBinding.recyclerViewNote.layoutManager = linearLayout
         viewBinding.recyclerViewNote.adapter = adapter
