@@ -54,7 +54,50 @@
                     android:background="@drawable/option"
                     android:backgroundTint="@color/white"
                     android:layout_gravity="center_vertical"
+                    android:visibility="gone"
                     />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/layoutSelectedNote"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                >
+                <ImageButton
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:id="@+id/backFromSelectedNote"
+                    android:elevation="5dp"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/baseline_arrow_back_24"
+                    android:backgroundTint="@color/white"
+                    />
+                <TextView
+                    android:id="@+id/numberSelected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:hint="0"
+                    android:textColor="@color/white"
+                    android:fontFamily="sans-serif-condensed-medium"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="25dp"/>
+                <CheckBox
+                    android:id="@+id/checkBox"
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="165dp"/>
+                <ImageButton
+                    android:id="@+id/bin"
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/delete"
+                    android:backgroundTint="@color/white"
+                    android:layout_marginStart="@dimen/_20sdp"/>
+
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/layoutMainToolBar"

@@ -1,18 +1,23 @@
 package com.example.myapplication.note
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.AlertDialog
 import android.app.Dialog
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -22,18 +27,23 @@ import com.example.myapplication.adapter.AdapterRecyclerViewNote
 import com.example.myapplication.databinding.CustomLayoutDialogSortBinding
 import com.example.myapplication.databinding.LayoutNoteFragmentBinding
 import com.example.myapplication.model.Note
+import com.example.myapplication.model.NoteDatabase
+import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
+import com.example.myapplication.note.option.ExportNote
 import com.example.myapplication.note.noteViewModel.NoteViewModel
+import com.example.myapplication.note.option.ImportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
-import java.util.Stack
 
 @SuppressLint("NotifyDataSetChanged")
 class NoteFragment : Fragment() {
     private lateinit var viewBinding : LayoutNoteFragmentBinding
     private lateinit var listNote : ArrayList<Note>
+    private var listNoteSelected : ArrayList<Note> = ArrayList()
     private lateinit var adapter : AdapterRecyclerViewNote
     private lateinit var viewModel : NoteViewModel
     private lateinit var preferences : NoteStatusPreferences
+    private lateinit var noteDatabase: NoteDatabase
     private var statusSort : String? = null
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +53,7 @@ class NoteFragment : Fragment() {
         viewBinding = LayoutNoteFragmentBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
         preferences = NoteStatusPreferences(requireContext())
+        noteDatabase = NoteDatabase.getInstance(requireContext())
         statusSort = preferences.getStatusSortValues()
         viewBinding.searchButton.setOnClickListener {
             viewBinding.layoutMainToolBar.visibility = View.GONE
@@ -62,11 +73,107 @@ class NoteFragment : Fragment() {
         viewBinding.txtSort.setOnClickListener {
             openDialogForSorting()
         }
+        viewBinding.optionButton.setOnClickListener { view ->
+            showPopupMenu(view)
+        }
+        viewBinding.backFromSelectedNote.setOnClickListener {
+            viewBinding.layoutSelectedNote.visibility = View.GONE
+            viewBinding.layoutMainToolBar.visibility = View.VISIBLE
+            adapter.onAllUnSelected()
+        }
+        viewBinding.checkBox.setOnClickListener {
+            if(viewBinding.checkBox.isChecked){
+                adapter.onAllSelected()
+            }else{
+                adapter.onAllUnSelected()
+            }
+        }
+        viewBinding.bin.setOnClickListener {
+            showDialogConfirmDelete()
+        }
         setUpRecyclerView()
         getData()
         searchNote()
         return viewBinding.root
     }
+
+    private fun showDialogConfirmDelete() {
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("Confirm")
+            .setMessage("Do you want to remove this selected notes ?")
+            .setPositiveButton("Yes") { dialogInterface, _ ->
+                for(note in listNoteSelected){
+                    noteDatabase.noteDao().delete(note)
+                }
+                listNoteSelected.clear()
+                viewBinding.layoutSelectedNote.visibility = View.GONE
+                viewBinding.layoutMainToolBar.visibility = View.VISIBLE
+                adapter.isSelected = false
+                adapter.clearListSelectedNote()
+                dialogInterface.cancel()
+            }
+            .setNegativeButton("No") { dialogInterface, _ ->
+                dialogInterface.cancel()
+            }
+        dialog.show()
+    }
+
+    private fun showPopupMenu(view: View?) {
+        val popupMenu = PopupMenu(requireContext(), view)
+        popupMenu.menuInflater.inflate(R.menu.menu_options_note, popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            handleMenuItemClick(menuItem)
+            true
+        }
+        popupMenu.show()
+    }
+    private fun handleMenuItemClick(menuItem: MenuItem) {
+        when (menuItem.itemId) {
+            R.id.exportNote -> {
+                openDocumentTree()
+            }
+            R.id.importNote -> {
+                openDocumentPicker()
+            }
+            R.id.selectAllNote ->{
+                adapter.onAllSelected()
+            }
+        }
+    }
+
+    private fun openDocumentPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "text/plain"
+        startActivityForResult(intent, 2)
+    }
+
+    private fun openDocumentTree() {   //Cho phep chon thu muc muon luu tai lieu
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        startActivityForResult(intent, 1 )
+    }
+
+
+    @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+            val uri: Uri? = data?.data
+            if (uri != null) {
+                ExportNote(requireContext(), requireActivity()).saveListNoteToDocument(uri, listNote)
+            }
+        } else if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
+            val uri: Uri? = data?.data
+            if (uri != null) {
+                ImportNote(requireActivity(), requireContext(), object : InterfaceCompleteListener{
+                    override fun onCompleteListener(note: Note) {
+                        noteDatabase.noteDao().insertNote(note)
+                        Toast.makeText(requireContext(),"${note.label} file has imported !", Toast.LENGTH_SHORT).show()
+                    }
+                }).readNoteFromFile(uri)
+            }
+        }
+    }
+
     private fun checkStatusSort() {
         if(statusSort != null){
             when(statusSort){
@@ -134,6 +241,20 @@ class NoteFragment : Fragment() {
 
             override fun onClickColorItem(color: String) {
 
+            }
+
+            override fun onSelectedNote(listNoteSelectedResult: ArrayList<Note>) {
+                if(listNoteSelectedResult.size == 0){
+                    viewBinding.layoutSelectedNote.visibility = View.GONE
+                    viewBinding.layoutMainToolBar.visibility = View.VISIBLE
+                }else {
+                    viewBinding.layoutSelectedNote.visibility = View.VISIBLE
+                    viewBinding.layoutMainToolBar.visibility = View.GONE
+                    viewBinding.layoutSearchToolBar.visibility = View.GONE
+                    viewBinding.numberSelected.text = listNoteSelectedResult.size.toString()
+                    listNoteSelected.clear()
+                    listNoteSelected.addAll(listNoteSelectedResult)
+                }
             }
         }, requireContext())
         viewBinding.recyclerViewNote.layoutManager = linearLayout

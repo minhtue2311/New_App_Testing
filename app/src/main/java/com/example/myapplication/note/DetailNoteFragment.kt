@@ -1,14 +1,18 @@
 package com.example.myapplication.note
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
+import android.text.SpannableString
 import android.text.TextWatcher
-import android.util.Log
+import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -27,6 +31,7 @@ import com.example.myapplication.databinding.LayoutShowInfoNoteBinding
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
+import com.example.myapplication.note.option.ExportNote
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,6 +75,7 @@ class DetailNoteFragment : Fragment() {
         viewBinding.btnUndo.setOnClickListener {
             undoFunction(rootValue)
         }
+
         return viewBinding.root
     }
     private fun handleSavingData(){
@@ -184,7 +190,6 @@ class DetailNoteFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 // Add the previous text to the stack only if the current text is different than the older
                 if (s.toString() != previousText && !isChangingCharacter) {
-                    Log.d("String to push:", previousText)
                     undoStack.push(previousText)
                 }
             }
@@ -192,7 +197,6 @@ class DetailNoteFragment : Fragment() {
 
         viewBinding.editTextContent.addTextChangedListener(textWatcher)
     }
-
     private fun undoFunction(initString: String) {
         if (undoStack.isNotEmpty()) {
             val previousText = undoStack.pop()
@@ -206,15 +210,28 @@ class DetailNoteFragment : Fragment() {
             }
         }
     }
-
-
-
     private fun showPopupMenu(view: View) {
         val popupMenu = PopupMenu(requireContext(), view)
         popupMenu.menuInflater.inflate(R.menu.menu_options_item_note, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             handleMenuItemClick(menuItem)
             true
+        }
+        val undoAllMenuItem = popupMenu.menu.findItem(R.id.undoAll)
+        if(rootValue == "" || rootValue == viewBinding.editTextContent.text.toString()){
+            undoAllMenuItem.isEnabled = false
+            undoAllMenuItem.title = undoAllMenuItem.title.toString().apply {
+                undoAllMenuItem.title = SpannableString(this).apply {
+                    setSpan(ForegroundColorSpan(Color.GRAY),0,length,0)
+                }
+            }
+        }else{
+            undoAllMenuItem.isEnabled = true
+            undoAllMenuItem.title = undoAllMenuItem.title.toString().apply {
+                undoAllMenuItem.title = SpannableString(this).apply {
+                    setSpan(ForegroundColorSpan(Color.BLACK), 0, length, 0)
+                }
+            }
         }
         popupMenu.show()
     }
@@ -236,7 +253,28 @@ class DetailNoteFragment : Fragment() {
             R.id.show_info -> {
                 showDialogInfo()
             }
+            R.id.undoAll -> {
+                showUndoAllDialog()
+            }
+            R.id.exportTxtFiles ->{
+                openDocumentTree()
+            }
         }
+    }
+
+    private fun showUndoAllDialog() {
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("Confirm")
+            .setMessage("Remove all the note changes made since the last opening of the note ?")
+            .setPositiveButton("UNDO ALL") { dialogInterface, _ ->
+                viewBinding.editTextContent.setText(note?.content)
+                viewBinding.editTextContent.setSelection(note?.content.toString().length)
+                dialogInterface.cancel()
+            }
+            .setNegativeButton("CANCEL") { dialogInterface, _ ->
+                dialogInterface.cancel()
+            }
+        dialog.show()
     }
 
     private fun showDialogConfirm() {
@@ -289,6 +327,20 @@ class DetailNoteFragment : Fragment() {
         }
         return result
     }
+    private fun openDocumentTree() {   //Cho phep chon thu muc muon luu tai lieu
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        startActivityForResult(intent, 1 )
+    }
+    @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+            val uri: Uri? = data?.data
+            if (uri != null) {
+                ExportNote(requireContext(), requireActivity()).saveNoteToDocument(uri,note)
+            }
+        }
+    }
     private fun showDialogPickColor(){
         val dialog = Dialog(requireContext())
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -327,6 +379,11 @@ class DetailNoteFragment : Fragment() {
                 binding.txtSelectColor.setBackgroundColor(Color.parseColor(color))
                 colorInstant = color
             }
+
+            override fun onSelectedNote(listNoteSelectedResult: ArrayList<Note>) {
+
+            }
+
         })
         binding.recyclerViewPickColor.adapter = adapter
 
@@ -365,5 +422,4 @@ class DetailNoteFragment : Fragment() {
         }
         dialog.show()
     }
-
 }
