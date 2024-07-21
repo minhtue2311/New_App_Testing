@@ -20,4 +20,23 @@ interface NoteDAO {
 
     @Delete
     fun delete(note: Note)
+
+    @Query("SELECT * FROM NOTE WHERE categoryId = :categoryId")
+    fun getNotesByCategoryID(categoryId :Int) : LiveData<List<Note>>
+
+}
+
+@Dao
+interface CategoriesDAO{
+    @Insert
+    fun insertCategories(categories : Categories)
+
+    @Update
+    fun updateCategories(categories : Categories)
+
+    @Query("SELECT * FROM Categories")
+    fun getAllCategories() : LiveData<List<Categories>>
+
+    @Delete
+    fun deleteCategory(categories : Categories)
 }

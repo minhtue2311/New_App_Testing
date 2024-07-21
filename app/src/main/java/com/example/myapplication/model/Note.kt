@@ -4,27 +4,33 @@ package com.example.myapplication.model
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.room.Entity
-import androidx.room.Ignore
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "Note")
+@Entity(tableName = "Note",
+        foreignKeys = [ForeignKey(entity = Categories::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("categoriesId"),
+            onDelete = ForeignKey.CASCADE)])
 class Note(
     var title: String,
     var content: String,
     var createDate: String,
-    var editedDate : String
+    var editedDate : String,
 ) : Parcelable {
 
     @PrimaryKey(autoGenerate = true)
     var id: Int? = null
     var color: String = ""
     var label : String = ""
+    var categoryId : Int? = null
 
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readString() ?: "",
         parcel.readString() ?: "",
-        parcel.readString() ?: ""
+        parcel.readString() ?: "",
+
     ) {
         id = parcel.readValue(Int::class.java.classLoader) as? Int
         color = parcel.readString() ?: ""
