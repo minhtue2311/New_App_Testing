@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "Note",
         foreignKeys = [ForeignKey(entity = Categories::class,
             parentColumns = arrayOf("id"),
-            childColumns = arrayOf("categoriesId"),
+            childColumns = arrayOf("categoryId"),
             onDelete = ForeignKey.CASCADE)])
 class Note(
     var title: String,
@@ -35,6 +35,7 @@ class Note(
         id = parcel.readValue(Int::class.java.classLoader) as? Int
         color = parcel.readString() ?: ""
         label = parcel.readString() ?: ""
+        categoryId = parcel.readValue(Int::class.java.classLoader) as? Int
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -45,6 +46,7 @@ class Note(
         parcel.writeValue(id)
         parcel.writeString(color)
         parcel.writeString(label)
+        parcel.writeValue(categoryId)
     }
 
     override fun describeContents(): Int {

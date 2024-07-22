@@ -24,8 +24,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
 import com.example.myapplication.adapter.AdapterRecyclerViewNote
+import com.example.myapplication.categories.CategoriesFragment
 import com.example.myapplication.databinding.CustomLayoutDialogSortBinding
 import com.example.myapplication.databinding.LayoutNoteFragmentBinding
+import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
@@ -34,9 +36,10 @@ import com.example.myapplication.note.option.ExportNote
 import com.example.myapplication.note.noteViewModel.NoteViewModel
 import com.example.myapplication.note.option.ImportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
+import com.google.android.material.navigation.NavigationView
 
 @SuppressLint("NotifyDataSetChanged")
-class NoteFragment : Fragment() {
+class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
     private lateinit var viewBinding : LayoutNoteFragmentBinding
     private lateinit var listNote : ArrayList<Note>
     private var listNoteSelected : ArrayList<Note> = ArrayList()
@@ -67,6 +70,7 @@ class NoteFragment : Fragment() {
         viewBinding.btnOpenClose.setOnClickListener {
             viewBinding.drawerLayout.openDrawer(viewBinding.navView)
         }
+        viewBinding.navView.setNavigationItemSelectedListener(this)
         viewBinding.btnCreate.setOnClickListener{
             changeToCreateNoteFragment()
         }
@@ -169,6 +173,14 @@ class NoteFragment : Fragment() {
                         noteDatabase.noteDao().insertNote(note)
                         Toast.makeText(requireContext(),"${note.label} file has imported !", Toast.LENGTH_SHORT).show()
                     }
+
+                    override fun onEditCategoriesListener(categories: Categories) {
+
+                    }
+
+                    override fun onDeleteCategoriesListener(categories: Categories) {
+
+                    }
                 }).readNoteFromFile(uri)
             }
         }
@@ -255,6 +267,10 @@ class NoteFragment : Fragment() {
                     listNoteSelected.clear()
                     listNoteSelected.addAll(listNoteSelectedResult)
                 }
+            }
+
+            override fun onClickCategoriesItem(categories: Categories) {
+
             }
         }, requireContext())
         viewBinding.recyclerViewNote.layoutManager = linearLayout
@@ -364,5 +380,23 @@ class NoteFragment : Fragment() {
             h2.editedDate.compareTo(h1.editedDate)
         })
         adapter.notifyDataSetChanged()
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.note -> {}
+            R.id.categories -> {
+                onChangedToCategoriesFragment()
+            }
+        }
+        viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
+        return true
+    }
+
+    private fun onChangedToCategoriesFragment() {
+        val categoriesFragment = CategoriesFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.replace(R.id.mainLayout, categoriesFragment)
+        fragmentTrans.commit()
     }
 }

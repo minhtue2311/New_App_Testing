@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="@dimen/_280sdp"
     android:layout_height="wrap_content"
-    android:padding="16dp"
+    android:layout_gravity="center_horizontal"
     android:orientation="vertical">
 <TextView
     android:id="@+id/txtSelectColor"
@@ -11,6 +11,7 @@
     android:layout_gravity="center_horizontal"
     android:text="@string/select_color"
     android:textSize="16sp"
+    android:layout_marginTop="15dp"
     android:fontFamily="sans-serif-condensed-medium"
     android:background="@color/white"
     android:textColor="@color/black"/>

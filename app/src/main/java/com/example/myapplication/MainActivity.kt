@@ -13,7 +13,7 @@ class MainActivity : AppCompatActivity()  {
         setContentView(viewBinding.root)
         replaceFragment()
     }
-    fun replaceFragment(){
+    private fun replaceFragment(){
         val homeFragment = NoteFragment()
         val fragmentTrans = supportFragmentManager.beginTransaction()
         fragmentTrans.replace(R.id.mainLayout, homeFragment)

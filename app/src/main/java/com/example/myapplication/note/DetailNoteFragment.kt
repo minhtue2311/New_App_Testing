@@ -28,6 +28,7 @@ import com.example.myapplication.adapter.AdapterForPickColor
 import com.example.myapplication.databinding.LayoutColorPickerBinding
 import com.example.myapplication.databinding.LayoutDetailNoteBinding
 import com.example.myapplication.databinding.LayoutShowInfoNoteBinding
+import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
@@ -164,7 +165,7 @@ class DetailNoteFragment : Fragment() {
     private fun makeColorDarker(color : Int) : Int{
         val hsv = FloatArray(3)
         Color.colorToHSV(color,hsv)
-        hsv[2] *= 0.8f
+        hsv[2] *= 0.4f
         return Color.HSVToColor(hsv)
     }
     private fun initOriginalValueForEditText(){
@@ -363,10 +364,11 @@ class DetailNoteFragment : Fragment() {
             binding.txtSelectColor.setBackgroundColor(Color.WHITE)
         }
         //Init List Color
-        val colors = listOf("#FB0202","#3F51B6","#8CAF60","#FF9788","#FD5722","#FFC207",
-            "#876933","#65C3D1",
-            "#2196F3","#3F51B5","#4CAF50","#009688","#FF5722","#FFC107",
-            "#873933","#55C3D1")
+        val colors = listOf("#ffadaf","#ffd7a6","#fdffb6","#cbffc1","#9cf6ff","#a1c3ff",
+            "#bdb2ff","#ffc7ff",
+            "#fffffb","#d6e6ff","#d7f9f8","#ffffea","#fff0d3","#fcdfe1",
+            "#e4d4ef","#809cce","#94b8d0","#b8e0d5","#d6eadf","#eac3d5","#8c5193","#be4f91",
+            "#fe6361","#ff8530","#fea601","#ffd380")
         binding.recyclerViewPickColor.setHasFixedSize(false)
         val layoutManager = GridLayoutManager(requireContext(), 6)
         binding.recyclerViewPickColor.layoutManager = layoutManager
@@ -381,6 +383,10 @@ class DetailNoteFragment : Fragment() {
             }
 
             override fun onSelectedNote(listNoteSelectedResult: ArrayList<Note>) {
+
+            }
+
+            override fun onClickCategoriesItem(categories: Categories) {
 
             }
 

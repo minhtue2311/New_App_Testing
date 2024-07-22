@@ -94,7 +94,7 @@
                     android:layout_width="@dimen/_20sdp"
                     android:layout_height="@dimen/_20sdp"
                     android:layout_gravity="center_vertical"
-                    android:background="@drawable/delete"
+                    android:background="@drawable/baseline_delete_24"
                     android:backgroundTint="@color/white"
                     android:layout_marginStart="@dimen/_20sdp"/>
 
@@ -111,8 +111,8 @@
                     android:id="@+id/btnOpenClose"
                     android:elevation="5dp"
                     android:layout_margin="10dp"
-                    android:background="@drawable/menu"
-                    android:backgroundTint="@color/white"
+                    android:background="@drawable/baseline_menu_24"
+                    android:layout_gravity="center_vertical"
                     />
                 <TextView
                     android:id="@+id/contentTxt"
@@ -179,7 +179,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/custom_nav_header"
-        android:backgroundTint="@color/colorItem"
+        android:backgroundTint="#ffffdb"
         app:menu="@menu/nav_menu"/>
 
 
