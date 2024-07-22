@@ -130,6 +130,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
         binding.editTxtCategory.setText(categories.nameCategories)
         binding.btnOk.setOnClickListener {
+            categories.nameCategories = binding.editTxtCategory.text.toString()
             noteDatabase.categoriesDao().updateCategories(categories)
             dialog.cancel()
         }
