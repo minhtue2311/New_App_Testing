@@ -13,6 +13,7 @@ import android.text.Editable
 import android.text.SpannableString
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -23,15 +24,19 @@ import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
 import com.example.myapplication.adapter.AdapterForPickColor
+import com.example.myapplication.adapter.AdapterSelectCategory
 import com.example.myapplication.databinding.LayoutColorPickerBinding
+import com.example.myapplication.databinding.LayoutCustomSelectCategoryBinding
 import com.example.myapplication.databinding.LayoutDetailNoteBinding
 import com.example.myapplication.databinding.LayoutShowInfoNoteBinding
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
+import com.example.myapplication.model.relation.NoteCategoryRef
 import com.example.myapplication.note.option.ExportNote
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -48,6 +53,8 @@ class DetailNoteFragment : Fragment() {
     private var rootValue : String = ""
     private var isChangingCharacter = false
     private var isCreatedData = false
+    private var listCategories : ArrayList<Categories> = ArrayList()
+    private var listCategoriesSelected : ArrayList<Categories> = ArrayList()
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -76,9 +83,29 @@ class DetailNoteFragment : Fragment() {
         viewBinding.btnUndo.setOnClickListener {
             undoFunction(rootValue)
         }
-
+        getCategoriesData()
+        getCategoriesForThisNote()
         return viewBinding.root
     }
+
+    private fun getCategoriesForThisNote() {
+        if(note != null){
+            noteDatabase.noteDao().getNoteWithCategories(note!!.idNote!!).observe(viewLifecycleOwner){
+                if(it != null){
+                    for(category in it.listCategories){
+                        listCategoriesSelected.add(category)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getCategoriesData() {
+       noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner){
+            listCategories.addAll(it)
+       }
+    }
+
     private fun handleSavingData(){
         when (type) {
             "Create" -> {
@@ -244,7 +271,7 @@ class DetailNoteFragment : Fragment() {
             }
 
             R.id.action_Categories -> {
-
+                showDialogCategory()
             }
 
             R.id.action_colorize -> {
@@ -260,6 +287,59 @@ class DetailNoteFragment : Fragment() {
             R.id.exportTxtFiles ->{
                 openDocumentTree()
             }
+        }
+    }
+
+    private fun showDialogCategory() {
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val binding = LayoutCustomSelectCategoryBinding.inflate(dialog.layoutInflater)
+        dialog.setContentView(binding.root)
+        dialog.setCancelable(true)
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
+        val listCategoriesSelectedBackup = ArrayList<Categories>()
+        listCategoriesSelectedBackup.addAll(listCategoriesSelected)
+        val listCategoriesResultSelected = ArrayList<Categories>()
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
+        val adapter = AdapterSelectCategory(listCategories, listCategoriesSelected,object : AdapterSelectCategory.OnSelectedListCategories{
+            override fun onSelectedListCategories(listCategories: ArrayList<Categories>) {
+                listCategoriesResultSelected.clear()
+                listCategoriesResultSelected.addAll(listCategories)
+                for(item in listCategoriesResultSelected){
+                    Log.d("Item Selected", item.nameCategories)
+                }
+            }
+        })
+        binding.recyclerViewCheckNote.adapter = adapter
+        binding.recyclerViewCheckNote.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerViewCheckNote.setHasFixedSize(false)
+        binding.btnOk.setOnClickListener {
+            createNoteCategoryLinks(listCategoriesSelected)
+            dialog.cancel()
+        }
+        binding.btnCancel.setOnClickListener {
+            listCategoriesSelected.clear()
+            listCategoriesSelected.addAll(listCategoriesSelectedBackup)
+            dialog.cancel()
+        }
+        dialog.show()
+    }
+
+    private fun createNoteCategoryLinks(listCategoriesSelected: ArrayList<Categories>) {
+        val noteDao = noteDatabase.noteDao()
+        if(listCategoriesSelected.size != 0){
+            for(category in listCategoriesSelected){
+                if(note != null){
+                    val crossRef = NoteCategoryRef(note!!.idNote!!, category.idCategory!!)
+                    noteDao.insertNoteCategoryCrossRef(crossRef)
+                }
+            }
+            Toast.makeText(requireContext(), "Updated Categorize", Toast.LENGTH_SHORT).show()
+        }else{
+            Toast.makeText(requireContext(), "Size = 0", Toast.LENGTH_SHORT).show()
         }
     }
 

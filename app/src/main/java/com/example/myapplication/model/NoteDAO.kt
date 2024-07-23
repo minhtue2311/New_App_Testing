@@ -5,7 +5,11 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
+import com.example.myapplication.model.relation.CategoryWithNotes
+import com.example.myapplication.model.relation.NoteCategoryRef
+import com.example.myapplication.model.relation.NoteWithCategories
 
 @Dao
 interface NoteDAO {
@@ -21,8 +25,16 @@ interface NoteDAO {
     @Delete
     fun delete(note: Note)
 
-    @Query("SELECT * FROM NOTE WHERE categoryId = :categoryId")
-    fun getNotesByCategoryID(categoryId :Int) : LiveData<List<Note>>
+    @Insert
+    fun insertNoteCategoryCrossRef(crossRef: NoteCategoryRef)
+
+    @Transaction
+    @Query("SELECT * FROM Note WHERE idNote = :noteId")
+    fun getNoteWithCategories(noteId: Int): LiveData<NoteWithCategories>
+
+    @Transaction
+    @Query("SELECT * FROM Categories WHERE idCategory = :categoryId")
+    fun getCategoryWithNotes(categoryId: Int): LiveData<CategoryWithNotes>
 
 }
 

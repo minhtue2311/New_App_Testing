@@ -81,13 +81,22 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         val menu = viewBinding.navView.menu
         val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
 
-        // Kiểm tra nếu categoriesGroupItem không bị null
         if (categoriesGroupItem != null) {
             val categoriesGroup = categoriesGroupItem.subMenu
-            categoriesGroup?.clear() // Xóa các phần tử cũ trước khi thêm mới
-            listCategories.forEach { category ->
-                categoriesGroup?.add(R.id.categoriesGroup, Menu.NONE, Menu.NONE, category.nameCategories)
-                    ?.setIcon(R.drawable.tag)
+
+            // Xóa các phần tử động trước đó, giữ lại phần tử "Edit categories"
+            categoriesGroup?.let {
+                val editCategoryItem = it.findItem(R.id.categories)
+                it.clear()
+                it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
+                    .setIcon(R.drawable.baseline_playlist_add_24)
+
+                // Thêm các phần tử mới từ danh sách với ID duy nhất
+                listCategories.forEachIndexed { index, category ->
+                    val itemId = Menu.FIRST + index   // Sử dụng ID duy nhất cho mỗi phần tử, tránh trùng với R.id.categories
+                    it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
+                        ?.setIcon(R.drawable.tag)
+                }
             }
         } else {
             // Xử lý nếu categoriesGroupItem bị null (có thể ghi log hoặc hiện thông báo lỗi)
@@ -159,7 +168,12 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
             R.id.note -> {
                 onChangeToNoteFragment()
             }
-            R.id.categories -> {}
+            R.id.categories -> {
+
+            }
+            else ->{
+
+            }
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true

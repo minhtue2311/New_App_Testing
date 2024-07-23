@@ -11,7 +11,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -96,9 +98,18 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             showDialogConfirmDelete()
         }
         setUpRecyclerView()
-        getData()
+        getNoteData()
+        getCategoryData()
         searchNote()
         return viewBinding.root
+    }
+
+    private fun getCategoryData() {
+        noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner){
+            if(it != null){
+                loadCategoriesToMenu(it)
+            }
+        }
     }
 
     private fun showDialogConfirmDelete() {
@@ -223,17 +234,25 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private fun getData(){
+    private fun getNoteData(){
         viewModel.getLiveDataNote(requireContext()).observe(viewLifecycleOwner){
-            if(listNote.isNotEmpty()){
-                listNote.clear()
-                for(note in it){
-                    listNote.add(note)
-                }
-            }
-            else{
-                for(note in it){
-                    listNote.add(note)
+//            if(listNote.isNotEmpty()){
+//                listNote.clear()
+//                for(note in it){
+//
+//                    listNote.add(note)
+//                }
+//            }
+//            else{
+//                for(note in it){
+//                    listNote.add(note)
+//                }
+//            }
+            listNote.clear()
+            for(note in it ){
+                listNote.add(note)
+                noteDatabase.noteDao().getNoteWithCategories(note.idNote!!).observe(viewLifecycleOwner){
+
                 }
             }
             adapter.notifyDataSetChanged()
@@ -385,7 +404,7 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
             R.id.note -> {}
-            R.id.categories -> {
+            R.id.editCategories -> {
                 onChangedToCategoriesFragment()
             }
         }
@@ -398,5 +417,31 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
         fragmentTrans.replace(R.id.mainLayout, categoriesFragment)
         fragmentTrans.commit()
+    }
+    private fun loadCategoriesToMenu(listCategories: List<Categories>) {
+        val menu = viewBinding.navView.menu
+        val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
+
+        if (categoriesGroupItem != null) {
+            val categoriesGroup = categoriesGroupItem.subMenu
+
+            // Xóa các phần tử động trước đó, giữ lại phần tử "Edit categories"
+            categoriesGroup?.let {
+                val editCategoryItem = it.findItem(R.id.categories)
+                it.clear()
+                it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
+                    .setIcon(R.drawable.baseline_playlist_add_24)
+
+                // Thêm các phần tử mới từ danh sách với ID duy nhất
+                listCategories.forEachIndexed { index, category ->
+                    val itemId = Menu.FIRST + index   // Sử dụng ID duy nhất cho mỗi phần tử, tránh trùng với R.id.categories
+                    it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
+                        ?.setIcon(R.drawable.tag)
+                }
+            }
+        } else {
+            // Xử lý nếu categoriesGroupItem bị null (có thể ghi log hoặc hiện thông báo lỗi)
+            Log.e("CategoriesFragment", "categoriesGroupItem is null")
+        }
     }
 }
