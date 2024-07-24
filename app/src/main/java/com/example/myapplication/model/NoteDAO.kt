@@ -22,11 +22,21 @@ interface NoteDAO {
     @Query("SELECT * FROM Note")
     fun getAllNote() : LiveData<List<Note>>
 
+    @Query("SELECT * FROM Note WHERE idNote NOT IN (SELECT DISTINCT idNote FROM NoteCategoryRef)")
+    fun getNotesWithoutCategories(): LiveData<List<Note>>
+
+    @Query("DELETE FROM NoteCategoryRef WHERE idNote = :noteId")
+    fun deleteNoteCategoriesRefByNoteId(noteId: Int)
+
+
     @Delete
     fun delete(note: Note)
 
     @Insert
     fun insertNoteCategoryCrossRef(crossRef: NoteCategoryRef)
+
+    @Delete
+    fun deleteNoteCategoryCrossRef(crossRef: NoteCategoryRef)
 
     @Transaction
     @Query("SELECT * FROM Note WHERE idNote = :noteId")
@@ -35,6 +45,9 @@ interface NoteDAO {
     @Transaction
     @Query("SELECT * FROM Categories WHERE idCategory = :categoryId")
     fun getCategoryWithNotes(categoryId: Int): LiveData<CategoryWithNotes>
+
+    @Query("SELECT COUNT(*) FROM NoteCategoryRef WHERE idNote = :noteId AND idCategory = :categoryId")
+    fun checkNoteCategoryRefExists(noteId: Int, categoryId: Int): Int
 
 }
 
@@ -51,4 +64,7 @@ interface CategoriesDAO{
 
     @Delete
     fun deleteCategory(categories : Categories)
+
+    @Query("DELETE FROM NoteCategoryRef WHERE idCategory = :categoryId")
+    fun deleteNoteCategoriesByCategoryId(categoryId: Int)
 }

@@ -36,15 +36,17 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
     private lateinit var adapter : AdapterListCategories
     private lateinit var viewModel: CategoriesViewModel
     private lateinit var noteDatabase: NoteDatabase
+    override fun onCreate(savedInstanceState: Bundle?) {
+        viewModel = ViewModelProvider(this)[CategoriesViewModel::class.java]
+        noteDatabase = NoteDatabase.getInstance(requireContext())
+        super.onCreate(savedInstanceState)
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         viewBinding = LayoutCategoriesBinding.inflate(inflater, container, false)
-        viewModel = ViewModelProvider(this)[CategoriesViewModel::class.java]
-        noteDatabase = NoteDatabase.getInstance(requireContext())
-
         viewBinding.btnOpenClose.setOnClickListener {
             viewBinding.drawerLayout.openDrawer(viewBinding.navView)
         }
@@ -68,6 +70,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
     }
 
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun getData() {
         viewModel.getLiveDataCategories(requireContext()).observe(viewLifecycleOwner){
             listCategories.clear()
@@ -86,25 +89,21 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
 
             // Xóa các phần tử động trước đó, giữ lại phần tử "Edit categories"
             categoriesGroup?.let {
-                val editCategoryItem = it.findItem(R.id.categories)
                 it.clear()
                 it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
                     .setIcon(R.drawable.baseline_playlist_add_24)
-
-                // Thêm các phần tử mới từ danh sách với ID duy nhất
+                it.add(Menu.NONE, 2311, Menu.NONE, "Uncategorized")
+                    .setIcon(R.drawable.dont_tag)
                 listCategories.forEachIndexed { index, category ->
-                    val itemId = Menu.FIRST + index   // Sử dụng ID duy nhất cho mỗi phần tử, tránh trùng với R.id.categories
+                    val itemId = Menu.FIRST + index
                     it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
                         ?.setIcon(R.drawable.tag)
                 }
             }
         } else {
-            // Xử lý nếu categoriesGroupItem bị null (có thể ghi log hoặc hiện thông báo lỗi)
             Log.e("CategoriesFragment", "categoriesGroupItem is null")
         }
     }
-
-
     private fun setUpRecyclerView() {
         viewBinding.recyclerViewCategories.setHasFixedSize(false)
         listCategories = ArrayList()
@@ -166,24 +165,54 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
             R.id.note -> {
-                onChangeToNoteFragment()
+                onChangeToNoteFragment("All")
             }
-            R.id.categories -> {
+            R.id.editCategories -> {
 
+            }
+            2311 ->{
+                onChangeToNoteFragment("Uncategorized")
             }
             else ->{
-
+                val menu = viewBinding.navView.menu
+                val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
+                if (categoriesGroupItem != null) {
+                    val categoriesGroup = categoriesGroupItem.subMenu
+                    categoriesGroup?.let {
+                        if (it.findItem(item.itemId) != null && item.itemId != R.id.editCategories) {
+                            val selectedCategory = listCategories.find { category ->
+                                category.nameCategories == item.title
+                            }
+                            selectedCategory?.let {
+                                //Handle action select category
+                                onChangeToNoteFragmentWithCategories(selectedCategory)
+                            }
+                        }
+                    }
+                }
             }
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
     }
 
-    private fun onChangeToNoteFragment() {
+    private fun onChangeToNoteFragmentWithCategories(value : Categories) {
         val noteFragment = NoteFragment()
+        val bundle = Bundle()
+        bundle.putSerializable("category", value)
+        bundle.putString("Type", "category")
+        noteFragment.arguments = bundle
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
         fragmentTrans.replace(R.id.mainLayout, noteFragment)
         fragmentTrans.commit()
     }
-
+    private fun onChangeToNoteFragment(value : String) {
+        val noteFragment = NoteFragment()
+        val bundle = Bundle()
+        bundle.putString("Type", value)
+        noteFragment.arguments = bundle
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.replace(R.id.mainLayout, noteFragment)
+        fragmentTrans.commit()
+    }
 }

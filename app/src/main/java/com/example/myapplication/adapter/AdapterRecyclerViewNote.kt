@@ -37,7 +37,6 @@ class AdapterRecyclerViewNote(
     override fun getItemCount(): Int {
         return listNote.size
     }
-
     override fun onBindViewHolder(holder: ViewHolderNote, position: Int) {
         val model = listNote[position]
         holder.bindData(model, context, listNoteSelected)
@@ -236,6 +235,7 @@ class ViewHolderNote(private var viewBinding: CustomItemRecyclerViewBinding) :
     fun bindData(note: Note, context: Context, listNoteSelected: ArrayList<Note>) {
         viewBinding.title.text = note.label
         viewBinding.dayEdited.text = context.getString(R.string.last_edited) + note.editedDate
+        viewBinding.categories.text = handleListCategories(note.listCategories)
         if (listNoteSelected.contains(note)) {
             if (note.color != "") {
                 viewBinding.linearLayoutItem.background = handleDrawableColor(
@@ -334,5 +334,21 @@ class ViewHolderNote(private var viewBinding: CustomItemRecyclerViewBinding) :
         val newB = (b * (1 - factor)).toInt()
 
         return Color.argb(alpha, newR, newG, newB)
+    }
+    private fun handleListCategories(categories : String) : String{
+        var stringResult = ""
+        if(categories.length <= 20){
+            stringResult = categories
+        }else{
+            for(character in categories){
+                if(stringResult.length <= 20){
+                    stringResult += character
+                }else{
+                    stringResult += "...."
+                    break
+                }
+            }
+        }
+        return stringResult
     }
 }

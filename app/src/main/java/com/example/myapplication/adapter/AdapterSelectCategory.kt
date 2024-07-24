@@ -9,7 +9,6 @@ import com.example.myapplication.model.Categories
 class AdapterSelectCategory(
     private var listCategories: ArrayList<Categories>,
     private var listCategoriesSelected: ArrayList<Categories>,
-    private var onSelectedListCategories: OnSelectedListCategories
 ) : RecyclerView.Adapter<AdapterSelectCategory.ViewHolderSelectCategory>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSelectCategory {
@@ -38,12 +37,7 @@ class AdapterSelectCategory(
                 // Nếu checkbox bị bỏ chọn, loại bỏ model khỏi listCategoriesSelected
                 listCategoriesSelected.remove(model)
             }
-            onSelectedListCategories.onSelectedListCategories(listCategoriesSelected)
         }
-    }
-
-    interface OnSelectedListCategories {
-        fun onSelectedListCategories(listCategories: ArrayList<Categories>)
     }
 
     class ViewHolderSelectCategory(private var viewBinding: LayoutCustomItemSelectCategoryBinding) : RecyclerView.ViewHolder(viewBinding.root) {

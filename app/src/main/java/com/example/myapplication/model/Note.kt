@@ -16,7 +16,7 @@ class Note(
     var idNote: Int? = null
     var color: String = ""
     var label: String = ""
-
+    var listCategories : String = ""
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readString() ?: "",
@@ -26,6 +26,7 @@ class Note(
         idNote = parcel.readValue(Int::class.java.classLoader) as? Int
         color = parcel.readString() ?: ""
         label = parcel.readString() ?: ""
+        listCategories = parcel.readString() ?: ""
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -36,6 +37,7 @@ class Note(
         parcel.writeValue(idNote)
         parcel.writeString(color)
         parcel.writeString(label)
+        parcel.writeString(listCategories)
     }
 
     override fun describeContents(): Int {

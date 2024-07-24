@@ -23,6 +23,7 @@ import android.view.WindowManager
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
@@ -38,6 +39,10 @@ import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.model.relation.NoteCategoryRef
 import com.example.myapplication.note.option.ExportNote
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -302,22 +307,13 @@ class DetailNoteFragment : Fragment() {
         )
         val listCategoriesSelectedBackup = ArrayList<Categories>()
         listCategoriesSelectedBackup.addAll(listCategoriesSelected)
-        val listCategoriesResultSelected = ArrayList<Categories>()
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
-        val adapter = AdapterSelectCategory(listCategories, listCategoriesSelected,object : AdapterSelectCategory.OnSelectedListCategories{
-            override fun onSelectedListCategories(listCategories: ArrayList<Categories>) {
-                listCategoriesResultSelected.clear()
-                listCategoriesResultSelected.addAll(listCategories)
-                for(item in listCategoriesResultSelected){
-                    Log.d("Item Selected", item.nameCategories)
-                }
-            }
-        })
+        val adapter = AdapterSelectCategory(listCategories, listCategoriesSelected)
         binding.recyclerViewCheckNote.adapter = adapter
         binding.recyclerViewCheckNote.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerViewCheckNote.setHasFixedSize(false)
         binding.btnOk.setOnClickListener {
-            createNoteCategoryLinks(listCategoriesSelected)
+            createNoteCategoryLinks(listCategoriesSelectedBackup)
             dialog.cancel()
         }
         binding.btnCancel.setOnClickListener {
@@ -328,18 +324,32 @@ class DetailNoteFragment : Fragment() {
         dialog.show()
     }
 
-    private fun createNoteCategoryLinks(listCategoriesSelected: ArrayList<Categories>) {
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun createNoteCategoryLinks(listCategoriesInitial : ArrayList<Categories>) {
         val noteDao = noteDatabase.noteDao()
         if(listCategoriesSelected.size != 0){
-            for(category in listCategoriesSelected){
-                if(note != null){
-                    val crossRef = NoteCategoryRef(note!!.idNote!!, category.idCategory!!)
-                    noteDao.insertNoteCategoryCrossRef(crossRef)
+            GlobalScope.launch(Dispatchers.IO) {
+                for(categoryInitial in listCategoriesInitial){
+                    if(!listCategoriesSelected.contains(categoryInitial)){
+                        val crossRef = NoteCategoryRef(note!!.idNote!!, categoryInitial.idCategory!!)
+                        noteDao.deleteNoteCategoryCrossRef(crossRef)
+                    }
+                }
+                for (category in listCategoriesSelected) {
+                    if (note != null) {
+                        val linksExist = noteDatabase.noteDao().checkNoteCategoryRefExists(note!!.idNote!!, category.idCategory!!)
+                        if(linksExist == 0){
+                            val crossRef = NoteCategoryRef(note!!.idNote!!, category.idCategory!!)
+                            noteDao.insertNoteCategoryCrossRef(crossRef)
+                        }
+                    }
                 }
             }
-            Toast.makeText(requireContext(), "Updated Categorize", Toast.LENGTH_SHORT).show()
+            GlobalScope.launch(Dispatchers.Main) {
+                Toast.makeText(requireContext(), "Updated Categorize", Toast.LENGTH_SHORT).show()
+            }
         }else{
-            Toast.makeText(requireContext(), "Size = 0", Toast.LENGTH_SHORT).show()
+            Log.d("Error : ", "Error when updated categorize")
         }
     }
 

@@ -39,6 +39,10 @@ import com.example.myapplication.note.noteViewModel.NoteViewModel
 import com.example.myapplication.note.option.ImportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
 import com.google.android.material.navigation.NavigationView
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 @SuppressLint("NotifyDataSetChanged")
 class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
@@ -50,16 +54,22 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
     private lateinit var preferences : NoteStatusPreferences
     private lateinit var noteDatabase: NoteDatabase
     private var statusSort : String? = null
+    private var listCategoriesForMenuBar : ArrayList<Categories> = ArrayList()
+    private var category : Categories? = null
+    private var type : String = "All"
+    override fun onCreate(savedInstanceState: Bundle?) {
+        viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
+        preferences = NoteStatusPreferences(requireContext())
+        noteDatabase = NoteDatabase.getInstance(requireContext())
+        statusSort = preferences.getStatusSortValues()
+        super.onCreate(savedInstanceState)
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         viewBinding = LayoutNoteFragmentBinding.inflate(inflater, container, false)
-        viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
-        preferences = NoteStatusPreferences(requireContext())
-        noteDatabase = NoteDatabase.getInstance(requireContext())
-        statusSort = preferences.getStatusSortValues()
         viewBinding.searchButton.setOnClickListener {
             viewBinding.layoutMainToolBar.visibility = View.GONE
             viewBinding.layoutSearchToolBar.visibility = View.VISIBLE
@@ -98,28 +108,46 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             showDialogConfirmDelete()
         }
         setUpRecyclerView()
-        getNoteData()
+        getDataFromCategories()
         getCategoryData()
         searchNote()
         return viewBinding.root
     }
 
+    private fun getDataFromCategories() {
+        val bundle = arguments
+        if(bundle != null){
+            if(bundle["category"] != null){
+                category = bundle["category"] as Categories
+                viewBinding.contentTxt.text = category!!.nameCategories
+                viewBinding.contentTxt.visibility = View.VISIBLE
+            }
+            if(bundle["Type"] != null){
+                type = bundle["Type"] as String
+            }
+        }
+        getNoteData()
+    }
+
     private fun getCategoryData() {
         noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner){
-            if(it != null){
+            if(it.isNotEmpty()){
+                listCategoriesForMenuBar.addAll(it)
                 loadCategoriesToMenu(it)
             }
         }
     }
-
     private fun showDialogConfirmDelete() {
         val dialog = AlertDialog.Builder(context)
             .setTitle("Confirm")
             .setMessage("Do you want to remove this selected notes ?")
             .setPositiveButton("Yes") { dialogInterface, _ ->
-                for(note in listNoteSelected){
+                for (note in listNoteSelected) {
+                    noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(note.idNote!!)
                     noteDatabase.noteDao().delete(note)
                 }
+                Toast.makeText(requireContext(), "Delete Successfully", Toast.LENGTH_SHORT)
+                    .show()
                 listNoteSelected.clear()
                 viewBinding.layoutSelectedNote.visibility = View.GONE
                 viewBinding.layoutMainToolBar.visibility = View.VISIBLE
@@ -233,31 +261,42 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
 
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun getNoteData(){
-        viewModel.getLiveDataNote(requireContext()).observe(viewLifecycleOwner){
-//            if(listNote.isNotEmpty()){
-//                listNote.clear()
-//                for(note in it){
-//
-//                    listNote.add(note)
-//                }
-//            }
-//            else{
-//                for(note in it){
-//                    listNote.add(note)
-//                }
-//            }
-            listNote.clear()
-            for(note in it ){
-                listNote.add(note)
-                noteDatabase.noteDao().getNoteWithCategories(note.idNote!!).observe(viewLifecycleOwner){
-
-                }
-            }
-            adapter.notifyDataSetChanged()
-            checkStatusSort()
+        viewModel.clearSources()
+        if(category != null && type == "category"){
+            val noteDAO = noteDatabase.noteDao()
+            viewModel.getNoteByCategories(category!!.idCategory!!, noteDAO)
+        }else if(type == "All"){
+            viewModel.getLiveDataNote(requireContext())
+        }else if(type == "Uncategorized"){
+            viewModel.getUncategorizedNote(noteDatabase.noteDao())
         }
+        viewModel.notes.observe(viewLifecycleOwner){result ->
+            handleListNote(result)
+        }
+    }
+    private fun handleListNote(listNoteResult: List<Note>) {
+        listNote.clear()
+        for (note in listNoteResult) {
+            listNote.add(note)
+            noteDatabase.noteDao().getNoteWithCategories(note.idNote!!)
+                .observe(viewLifecycleOwner) {
+                    if (it != null && it.listCategories.isNotEmpty()) {
+                        var categoriesString = ""
+                        for (item in it.listCategories) {
+                            if (it.listCategories.indexOf(item) == it.listCategories.size - 1) {
+                                categoriesString += item.nameCategories
+                            } else {
+                                categoriesString += "${item.nameCategories}, "
+                            }
+                        }
+                        note.listCategories = categoriesString
+                        adapter.notifyItemChanged(listNoteResult.indexOf(note))
+                    }
+                }
+        }
+        adapter.notifyDataSetChanged()
+        checkStatusSort()
     }
 
 
@@ -403,9 +442,42 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when(item.itemId){
-            R.id.note -> {}
+            R.id.note -> {
+                viewBinding.contentTxt.visibility = View.GONE
+                category = null
+                type = "All"
+                getNoteData()
+            }
             R.id.editCategories -> {
                 onChangedToCategoriesFragment()
+            }
+            2311 -> {
+                type = "Uncategorized"
+                viewBinding.contentTxt.visibility = View.VISIBLE
+                viewBinding.contentTxt.text = type
+                getNoteData()
+            }
+            else ->{
+                val menu = viewBinding.navView.menu
+                val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
+                if (categoriesGroupItem != null) {
+                    val categoriesGroup = categoriesGroupItem.subMenu
+                    categoriesGroup?.let {
+                        if (it.findItem(item.itemId) != null && item.itemId != R.id.editCategories && item.itemId!= 2311) {
+                            val selectedCategory = listCategoriesForMenuBar.find { category ->
+                                category.nameCategories == item.title
+                            }
+                            selectedCategory?.let {
+                                //Handle action select category
+                                category = selectedCategory
+                                type = "category"
+                                viewBinding.contentTxt.visibility = View.VISIBLE
+                                viewBinding.contentTxt.text = category!!.nameCategories
+                                getNoteData()
+                            }
+                        }
+                    }
+                }
             }
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
@@ -429,8 +501,12 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             categoriesGroup?.let {
                 val editCategoryItem = it.findItem(R.id.categories)
                 it.clear()
+                //Add Edit Categories Item Menu
                 it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
                     .setIcon(R.drawable.baseline_playlist_add_24)
+                //Add Uncategorized Item Menu
+                it.add(Menu.NONE, 2311, Menu.NONE, "Uncategorized")
+                    .setIcon(R.drawable.dont_tag)
 
                 // Thêm các phần tử mới từ danh sách với ID duy nhất
                 listCategories.forEachIndexed { index, category ->
