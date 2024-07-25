@@ -153,7 +153,7 @@ class AdapterRecyclerViewNote(
             strokeWidth = 6
             gradientDrawable.setStroke(strokeWidth, strokeColor, dashWidth, dashGap)
         } else if (isSelectedItem && colorInt == Color.parseColor("#ffffdd")) {
-            strokeColor = Color.parseColor("#873933")
+            strokeColor = Color.parseColor("#a9926d")
             val dashWidth = 80f
             val dashGap = 20f
             strokeWidth = 6
@@ -194,7 +194,7 @@ class AdapterRecyclerViewNote(
         val f = object : Filter() {
             override fun performFiltering(p0: CharSequence?): FilterResults {
                 val fr = FilterResults()
-                if (p0 == null || p0.isEmpty()) {
+                if (p0.isNullOrEmpty()) {
                     fr.count = listNoteBackUp.size
                     fr.values = listNoteBackUp
                 } else {
@@ -299,7 +299,7 @@ class ViewHolderNote(private var viewBinding: CustomItemRecyclerViewBinding) :
             strokeWidth = 6
             gradientDrawable.setStroke(strokeWidth, strokeColor, dashWidth, dashGap)
         } else if (isSelected && colorInt == Color.parseColor("#ffffdd")) {
-            strokeColor = Color.parseColor("#873933")
+            strokeColor = Color.parseColor("#a9926d")
             val dashWidth = 80f
             val dashGap = 10f
             strokeWidth = 6

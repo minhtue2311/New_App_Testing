@@ -337,6 +337,11 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
 
     private fun changeToCreateNoteFragment(){
         val detailFragment = DetailNoteFragment()
+        if(category != null){
+            val bundle = Bundle()
+            bundle.putSerializable("CategoryForNote", category)
+            detailFragment.arguments = bundle
+        }
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
         fragmentTrans.add(R.id.mainLayout, detailFragment)
         fragmentTrans.addToBackStack(null)

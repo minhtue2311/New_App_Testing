@@ -9,9 +9,13 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.SpannableString
+import android.text.Spanned
 import android.text.TextWatcher
+import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.LayoutInflater
@@ -20,10 +24,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
@@ -48,6 +52,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.Stack
 
+
 class DetailNoteFragment : Fragment() {
     private lateinit var viewBinding: LayoutDetailNoteBinding
     private var note: Note? = null
@@ -56,10 +61,21 @@ class DetailNoteFragment : Fragment() {
     private var colorInstant = "#F2EDC0"
     private var undoStack : Stack<String> = Stack()
     private var rootValue : String = ""
+    private var valueBeforeSearch : String = ""
     private var isChangingCharacter = false
     private var isCreatedData = false
     private var listCategories : ArrayList<Categories> = ArrayList()
     private var listCategoriesSelected : ArrayList<Categories> = ArrayList()
+    private var categoriesInsertForNote : Categories? = null
+    private var readMode = false
+    private var clickCount = 0
+    private val doubleClickThreshold = 500L // Thời gian ngưỡng cho nhấn đúp (ms)
+    private val handler = Handler(Looper.getMainLooper())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        noteDatabase = NoteDatabase.getInstance(requireContext())
+        super.onCreate(savedInstanceState)
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -67,21 +83,51 @@ class DetailNoteFragment : Fragment() {
     ): View? {
         viewBinding = LayoutDetailNoteBinding.inflate(inflater, container, false)
         getData()
-        noteDatabase = NoteDatabase.getInstance(requireContext())
         viewBinding.detailFragmentLayout.setOnClickListener {
             //TO DO
         }
-        viewBinding.back.setOnClickListener {
-            if(!isCreatedData) {
-                handleSavingData()
+        viewBinding.editTextContent.setOnClickListener {
+            if(readMode){
+                clickCount++
+                if (clickCount == 1) {
+                    Toast.makeText(requireContext(), "Tap Twice To Edit", Toast.LENGTH_SHORT).show()
+                    handler.postDelayed({
+                        clickCount = 0
+                    }, doubleClickThreshold)
+                } else if (clickCount == 2) {
+                    readMode = false
+                    setReadOnlyMode()
+                    clickCount = 0
+                    handler.removeCallbacksAndMessages(null)
+                }
             }
-            requireActivity().supportFragmentManager.popBackStack()
+        }
+        viewBinding.backFromEditMode.setOnClickListener {
+            backToHomeScreen()
+        }
+        viewBinding.backFromReadMode.setOnClickListener {
+            backToHomeScreen()
+        }
+        viewBinding.backFromSearch.setOnClickListener {
+            viewBinding.editTextContent.setText(valueBeforeSearch)
+            viewBinding.layoutTitle.visibility = View.VISIBLE
+            viewBinding.layoutSearchToolBar.visibility = View.GONE
         }
         viewBinding.txtSave.setOnClickListener {
             handleSavingData()
         }
         viewBinding.optionsButton.setOnClickListener { view ->
             showPopupMenu(view)
+        }
+        viewBinding.optionsButtonReadMode.setOnClickListener { view ->
+            showPopupMenuInReadMode(view)
+        }
+        viewBinding.btnDownload.setOnClickListener {
+            openDocumentTree()
+        }
+        viewBinding.btnChangeToEditMode.setOnClickListener {
+            readMode = false
+            setReadOnlyMode()
         }
         initOriginalValueForEditText()
         handleUndoEditText()
@@ -92,7 +138,29 @@ class DetailNoteFragment : Fragment() {
         getCategoriesForThisNote()
         return viewBinding.root
     }
+    private fun backToHomeScreen(){
+        if(!isCreatedData) {
+            handleSavingData()
+        }
+        requireActivity().supportFragmentManager.popBackStack()
+    }
 
+    private fun getData() {
+        val bundle = arguments
+        if (bundle != null) {
+            if(bundle.getParcelable<Note>("Note") != null){
+                note = bundle.getParcelable<Note>("Note")
+                bindData()
+                type = "Update"
+            }
+            if(bundle["CategoryForNote"] != null){
+                categoriesInsertForNote = bundle["CategoryForNote"] as Categories
+            }
+        }else{
+            viewBinding.linearLayoutDetailNote.setBackgroundColor(resources.getColor(R.color.colorItem))
+            viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
+        }
+    }
     private fun getCategoriesForThisNote() {
         if(note != null){
             noteDatabase.noteDao().getNoteWithCategories(note!!.idNote!!).observe(viewLifecycleOwner){
@@ -111,6 +179,7 @@ class DetailNoteFragment : Fragment() {
        }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun handleSavingData(){
         when (type) {
             "Create" -> {
@@ -137,7 +206,14 @@ class DetailNoteFragment : Fragment() {
                 else {
                     noteModel.label = title
                 }
-                noteDatabase.noteDao().insertNote(noteModel)
+                GlobalScope.launch(Dispatchers.IO){
+                   val insertNoteId = noteDatabase.noteDao().insertNoteAndGetId(noteModel)
+                    categoriesInsertForNote?.let {
+                        val crossRef = NoteCategoryRef(insertNoteId.toInt(), it.idCategory!!)
+                        noteDatabase.noteDao().insertNoteCategoryCrossRef(crossRef)
+                    }
+                }
+
                 isCreatedData = true
                 Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
             }
@@ -168,20 +244,6 @@ class DetailNoteFragment : Fragment() {
             }
         }
     }
-
-
-    private fun getData() {
-        val bundle = arguments
-        if (bundle != null) {
-            note = bundle.getParcelable<Note>("Note")
-            bindData()
-            type = "Update"
-        }else{
-            viewBinding.linearLayoutDetailNote.setBackgroundColor(resources.getColor(R.color.colorItem))
-            viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
-        }
-    }
-
     private fun bindData() {
         viewBinding.editTextTitle.setText(note?.title.toString())
         viewBinding.editTextContent.setText(note?.content.toString())
@@ -191,6 +253,13 @@ class DetailNoteFragment : Fragment() {
         }else{
             viewBinding.linearLayoutDetailNote.setBackgroundColor(resources.getColor(R.color.colorItem))
             viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
+        }
+    }
+    private fun handleColorTitleLayout(linearLayout: LinearLayout){
+        if(note?.color != ""){
+            linearLayout.background = ColorDrawable(makeColorDarker(Color.parseColor(note?.color)))
+        }else{
+            linearLayout.setBackgroundColor(resources.getColor(R.color.theme_background))
         }
     }
     //Make color background more deeper
@@ -268,22 +337,60 @@ class DetailNoteFragment : Fragment() {
         }
         popupMenu.show()
     }
+    private fun showPopupMenuInReadMode(view: View) {
+        val popupMenu = PopupMenu(requireContext(), view)
+        popupMenu.menuInflater.inflate(R.menu.menu_options_item_in_read_mode, popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            handleMenuItemClick(menuItem)
+            true
+        }
+        popupMenu.show()
+    }
+    private fun setReadOnlyMode() {
+        viewBinding.editTextTitle.isFocusable = !readMode
+        viewBinding.editTextTitle.isFocusableInTouchMode = !readMode
+        viewBinding.editTextTitle.isCursorVisible = !readMode
+
+        viewBinding.editTextContent.isFocusable = !readMode
+        viewBinding.editTextContent.isFocusableInTouchMode = !readMode
+        viewBinding.editTextContent.isCursorVisible = !readMode
+
+        if (readMode) {
+            viewBinding.editTextTitle.clearFocus()
+            viewBinding.editTextContent.clearFocus()
+            viewBinding.layoutTitleReadMode.visibility = View.VISIBLE
+            viewBinding.layoutTitle.visibility = View.GONE
+            handleColorTitleLayout(viewBinding.layoutTitleReadMode)
+        }
+        else{
+            viewBinding.layoutTitleReadMode.visibility = View.GONE
+            viewBinding.layoutTitle.visibility = View.VISIBLE
+        }
+    }
 
     private fun handleMenuItemClick(menuItem: MenuItem) {
         when (menuItem.itemId) {
-            R.id.action_delete -> {
+            R.id.action_delete , R.id.action_delete_read_mode -> {
                 showDialogConfirm()
             }
 
-            R.id.action_Categories -> {
+            R.id.action_Categories , R.id.action_Categories_read_mode -> {
                 showDialogCategory()
             }
 
-            R.id.action_colorize -> {
+            R.id.action_colorize , R.id.action_colorize_read_mode-> {
                 showDialogPickColor()
             }
+            R.id.search_menu -> {
+                viewBinding.layoutSearchToolBar.visibility = View.VISIBLE
+                viewBinding.layoutTitle.visibility = View.GONE
+                viewBinding.searchBar.isFocusable = true
+                valueBeforeSearch = viewBinding.editTextContent.text.toString()
+                handleColorTitleLayout(viewBinding.layoutSearchToolBar)
+                handleSearchInNote()
+            }
 
-            R.id.show_info -> {
+            R.id.show_info , R.id.show_info_read_mode -> {
                 showDialogInfo()
             }
             R.id.undoAll -> {
@@ -292,7 +399,58 @@ class DetailNoteFragment : Fragment() {
             R.id.exportTxtFiles ->{
                 openDocumentTree()
             }
+            R.id.switchToReadMode ->{
+                readMode = true
+                setReadOnlyMode()
+            }
+            R.id.share_menu -> {
+                openIntentForShareOutSide()
+            }
         }
+    }
+
+    private fun openIntentForShareOutSide() {
+        val sendIntent = Intent()
+        sendIntent.setAction(Intent.ACTION_SEND)
+        sendIntent.putExtra(Intent.EXTRA_TEXT, note?.content)
+        sendIntent.setType("text/plain")
+        val shareIntent = Intent.createChooser(sendIntent, "Share with")
+        startActivity(shareIntent)
+    }
+
+    private fun handleSearchInNote() {
+        viewBinding.searchBar.addTextChangedListener(object : TextWatcher{
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                highlightMatches(p0.toString())
+            }
+
+            override fun afterTextChanged(p0: Editable?) {
+
+            }
+        })
+    }
+    private fun highlightMatches(searchText: String) {
+        val content: String = viewBinding.editTextContent.text.toString()
+        val spannableString = SpannableString(content)
+
+        if (searchText.isNotEmpty()) {
+            var index = content.indexOf(searchText)
+            while (index >= 0) {
+                spannableString.setSpan(
+                    BackgroundColorSpan(Color.YELLOW),
+                    index,
+                    index + searchText.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                index = content.indexOf(searchText, index + searchText.length) // search for next character.
+            }
+        }
+
+        viewBinding.editTextContent.setText(spannableString)
     }
 
     private fun showDialogCategory() {
@@ -373,7 +531,10 @@ class DetailNoteFragment : Fragment() {
             .setTitle("Confirm")
             .setMessage("Do you want to remove ${note?.label}?")
             .setPositiveButton("Yes") { dialogInterface, _ ->
-                note?.let { noteDatabase.noteDao().delete(it) }
+                note?.let {
+                    noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(note?.idNote!!)
+                    noteDatabase.noteDao().delete(it)
+                }
                 dialogInterface.cancel()
                 requireActivity().supportFragmentManager.popBackStack()
             }

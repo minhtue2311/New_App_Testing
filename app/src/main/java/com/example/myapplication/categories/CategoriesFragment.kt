@@ -151,8 +151,9 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
     private fun showDialogConfirmDelete(categories: Categories) {
         val dialog = AlertDialog.Builder(context)
             .setTitle("Confirm")
-            .setMessage("Do you want to remove this selected notes ?")
+            .setMessage("Do you want to remove this selected notes? Notes from the category won't be deleted ?")
             .setPositiveButton("Yes") { dialogInterface, _ ->
+                noteDatabase.categoriesDao().deleteNoteCategoriesByCategoryId(categories.idCategory!!)
                noteDatabase.categoriesDao().deleteCategory(categories)
                 dialogInterface.cancel()
             }

@@ -15,6 +15,9 @@ import com.example.myapplication.model.relation.NoteWithCategories
 interface NoteDAO {
     @Insert
     fun insertNote(note: Note)
+    @Insert
+    fun insertNoteAndGetId(note: Note): Long
+
 
     @Update
     fun updateNote(note: Note)

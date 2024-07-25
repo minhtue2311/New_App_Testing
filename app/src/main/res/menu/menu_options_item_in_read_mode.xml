@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_delete_read_mode"
+        android:title="@string/delete" />
+    <item
+        android:id="@+id/action_Categories_read_mode"
+        android:title="@string/categorize" />
+    <item
+        android:id="@+id/action_colorize_read_mode"
+        android:title="@string/colorize" />
+    <item
+        android:id="@+id/show_info_read_mode"
+        android:title="@string/show_info" />
+</menu>

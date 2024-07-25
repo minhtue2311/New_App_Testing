@@ -12,6 +12,13 @@
     <item
         android:id="@+id/show_info"
         android:title="@string/show_info" />
+    <item android:id="@+id/search_menu"
+        android:title="@string/search"/>
+    <item android:id="@+id/share_menu"
+        android:title="@string/share"/>
+    <item
+        android:id="@+id/switchToReadMode"
+        android:title="@string/switch_to_read_mode"/>
     <item android:id="@+id/undoAll"
         android:title="@string/undo_all"/>
     <item android:id="@+id/exportTxtFiles"
