@@ -1,8 +1,12 @@
 package com.example.myapplication.note.formattingBar
 
+import android.graphics.Color
 import android.graphics.Typeface
 import android.text.Spannable
+import android.text.SpannableString
 import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.BackgroundColorSpan
 import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
@@ -36,4 +40,26 @@ class FormattingBarFunctions {
         ssb.setSpan(StrikethroughSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         editText.text = ssb
     }
+     fun highlightMatches(searchText: String, editText: EditText) {
+         val content: String = editText.text.toString()
+         val spannableString = SpannableString(content)
+
+         if (searchText.isNotEmpty()) {
+             var index = content.indexOf(searchText)
+             while (index >= 0) {
+                 spannableString.setSpan(
+                     BackgroundColorSpan(Color.YELLOW),
+                     index,
+                     index + searchText.length,
+                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                 )
+                 index = content.indexOf(
+                     searchText,
+                     index + searchText.length
+                 ) // search for next character.
+             }
+         }
+
+         editText.setText(spannableString)
+     }
 }

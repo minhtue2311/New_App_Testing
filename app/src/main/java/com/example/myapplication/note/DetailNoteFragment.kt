@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.Html
+import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -64,7 +65,7 @@ class DetailNoteFragment : Fragment() {
     private lateinit var noteDatabase: NoteDatabase
     private lateinit var preferences : NoteStatusPreferences
     private var colorInstant = "#F2EDC0"
-    private var undoStack : Stack<String> = Stack()
+    private var undoStack : Stack<Spannable> = Stack()
     private var rootValue : String = ""
     private var valueBeforeSearch : String = ""
     private var isChangingCharacter = false
@@ -207,12 +208,20 @@ class DetailNoteFragment : Fragment() {
     private fun handleOnClickItemFormattingBar() {
         viewBinding.boldButton.setOnClickListener {
             if(isBold){
-                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorItem))
                 isBold = false
+                if(note?.color != ""){
+                    viewBinding.boldButton.setBackgroundColor(Color.parseColor(note?.color))
+                }else{
+                    viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorItem))
+                }
             }else{
-                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
                 isBold = true
                 startIndex = viewBinding.editTextContent.text.length
+                if(note?.color != ""){
+                    viewBinding.boldButton.setBackgroundColor(makeColorDarker(Color.parseColor(note?.color)))
+                }else{
+                    viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
+                }
             }
         }
     }
@@ -296,14 +305,20 @@ class DetailNoteFragment : Fragment() {
         }
         if(note?.isBold!!){
             startIndex = viewBinding.editTextContent.text.length
-            Log.d("Start Index", startIndex.toString())
+            isBold = true
             if(note?.color != ""){
                 viewBinding.boldButton.setBackgroundColor(makeColorDarker(Color.parseColor(note?.color)))
             }else{
                 viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
             }
-            isBold = true
+        }else{
+            if(note?.color != ""){
+                viewBinding.boldButton.setBackgroundColor(Color.parseColor(note?.color))
+            }else{
+                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
+            }
         }
+
     }
     private fun handleColorTitleLayout(linearLayout: LinearLayout){
         if(note?.color != ""){
@@ -325,11 +340,15 @@ class DetailNoteFragment : Fragment() {
 
     private fun handleEditTextContent() {
         val textWatcher = object : TextWatcher {
-            private var previousText: String = ""
+            private var previousText: Spannable? = null
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 // Save the current text before it changes
-                previousText = s.toString()
+                previousText = if (s is Spannable) {
+                    SpannableStringBuilder(s)
+                } else {
+                    SpannableStringBuilder.valueOf(s)
+                }
             }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -341,7 +360,7 @@ class DetailNoteFragment : Fragment() {
 
             override fun afterTextChanged(s: Editable?) {
                 // Add the previous text to the stack only if the current text is different than the older
-                if (s.toString() != previousText && !isChangingCharacter) {
+                if (s.toString() != previousText.toString() && !isChangingCharacter) {
                     undoStack.push(previousText)
                 }
                 if(isBold && s != null){
@@ -374,7 +393,7 @@ class DetailNoteFragment : Fragment() {
             viewBinding.editTextContent.setSelection(previousText.length)
             isChangingCharacter = false // Reset the flag after undo is done
 
-            if (Html.toHtml(SpannableStringBuilder(viewBinding.editTextContent.text))== initString) {
+            if (viewBinding.editTextContent.text.toString()== initString) {
                 viewBinding.btnUndo.setTextColor(Color.parseColor("#A8A5A5"))
             }
         }
@@ -514,32 +533,12 @@ class DetailNoteFragment : Fragment() {
             }
 
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                highlightMatches(p0.toString())
+                FormattingBarFunctions().highlightMatches(p0.toString(), viewBinding.editTextContent)
             }
-
             override fun afterTextChanged(p0: Editable?) {
 
             }
         })
-    }
-    private fun highlightMatches(searchText: String) {
-        val content: String = viewBinding.editTextContent.text.toString()
-        val spannableString = SpannableString(content)
-
-        if (searchText.isNotEmpty()) {
-            var index = content.indexOf(searchText)
-            while (index >= 0) {
-                spannableString.setSpan(
-                    BackgroundColorSpan(Color.YELLOW),
-                    index,
-                    index + searchText.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                index = content.indexOf(searchText, index + searchText.length) // search for next character.
-            }
-        }
-
-        viewBinding.editTextContent.setText(spannableString)
     }
 
     private fun showDialogCategory() {
