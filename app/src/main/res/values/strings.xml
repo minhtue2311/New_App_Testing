@@ -44,4 +44,12 @@
     <string name="switch_to_read_mode">Switch to read mode</string>
     <string name="search">Search</string>
     <string name="share">Share</string>
+    <string name="boldbutton">boldButton</string>
+    <string name="italic">italicButton\n</string>
+    <string name="underline">underlineButton\n</string>
+    <string name="strikethrough">strikethought</string>
+    <string name="color">format_color</string>
+    <string name="font_size">textSizeButton\n</string>
+    <string name="clear_formatting">clear\n</string>
+    <string name="open_formatting_bar">Open Formatting Bar</string>
 </resources>

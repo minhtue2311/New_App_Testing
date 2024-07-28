@@ -1,4 +1,4 @@
-package com.example.myapplication.note.option
+package com.example.myapplication.note.options
 
 import android.app.Activity
 import android.content.Context

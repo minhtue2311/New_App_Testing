@@ -17,6 +17,7 @@ class Note(
     var color: String = ""
     var label: String = ""
     var listCategories : String = ""
+    var isBold : Boolean = false
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readString() ?: "",
@@ -27,6 +28,7 @@ class Note(
         color = parcel.readString() ?: ""
         label = parcel.readString() ?: ""
         listCategories = parcel.readString() ?: ""
+        isBold =  parcel.readByte() != 0.toByte()
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -38,6 +40,7 @@ class Note(
         parcel.writeString(color)
         parcel.writeString(label)
         parcel.writeString(listCategories)
+        parcel.writeByte(if (isBold) 1 else 0)
     }
 
     override fun describeContents(): Int {

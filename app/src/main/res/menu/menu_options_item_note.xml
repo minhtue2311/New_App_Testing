@@ -19,6 +19,9 @@
     <item
         android:id="@+id/switchToReadMode"
         android:title="@string/switch_to_read_mode"/>
+    <item
+        android:id="@+id/open_formatting_bar"
+        android:title="@string/open_formatting_bar"/>
     <item android:id="@+id/undoAll"
         android:title="@string/undo_all"/>
     <item android:id="@+id/exportTxtFiles"

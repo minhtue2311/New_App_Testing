@@ -173,9 +173,84 @@
             android:hint="@string/enter_text"
             android:fontFamily="sans-serif-condensed"
             android:textColor="@color/black"
-            android:paddingBottom="@dimen/_520sdp"
+            android:paddingBottom="@dimen/_450sdp"
             android:layout_marginStart="5dp"/>
+        <LinearLayout
+            android:id="@+id/linearLayoutFormatingBar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_30sdp"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/bold_button"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:src="@drawable/baseline_format_bold_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/boldbutton"
+                />
+
+            <ImageButton
+                android:id="@+id/italic_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:src="@drawable/baseline_format_italic_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/italic" />
+
+            <ImageButton
+                android:id="@+id/underline_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:src="@drawable/baseline_format_underlined_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/underline" />
+
+            <ImageButton
+                android:id="@+id/strikethrough_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:src="@drawable/baseline_format_strikethrough_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/strikethrough" />
+
+            <ImageButton
+                android:id="@+id/color_background_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:src="@drawable/baseline_format_color_fill_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/color" />
+            <ImageButton
+                android:id="@+id/color_text_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:src="@drawable/baseline_format_color_text_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/color" />
+            <ImageButton
+                android:id="@+id/font_size_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:src="@drawable/baseline_format_size_24"
+                android:background="@color/colorItem"
+                android:contentDescription="@string/font_size" />
+
+            <ImageButton
+                android:id="@+id/clear_formatting_button"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_height="@dimen/_25sdp"
+                android:layout_marginStart="@dimen/_10sdp"
+                android:background="@color/colorItem"
+                android:src="@drawable/baseline_clear_24"
+                android:contentDescription="@string/clear_formatting" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
-
 </LinearLayout>

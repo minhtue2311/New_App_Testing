@@ -12,7 +12,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
+import android.text.Html
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextWatcher
 import android.text.style.BackgroundColorSpan
@@ -42,7 +44,9 @@ import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.model.relation.NoteCategoryRef
-import com.example.myapplication.note.option.ExportNote
+import com.example.myapplication.note.formattingBar.FormattingBarFunctions
+import com.example.myapplication.note.options.ExportNote
+import com.example.myapplication.preferences.NoteStatusPreferences
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -58,6 +62,7 @@ class DetailNoteFragment : Fragment() {
     private var note: Note? = null
     private var type: String = "Create"
     private lateinit var noteDatabase: NoteDatabase
+    private lateinit var preferences : NoteStatusPreferences
     private var colorInstant = "#F2EDC0"
     private var undoStack : Stack<String> = Stack()
     private var rootValue : String = ""
@@ -72,8 +77,13 @@ class DetailNoteFragment : Fragment() {
     private val doubleClickThreshold = 500L // Thời gian ngưỡng cho nhấn đúp (ms)
     private val handler = Handler(Looper.getMainLooper())
 
+    //Variable for state formatting bar
+    private var startIndex = 0
+    private var isBold = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         noteDatabase = NoteDatabase.getInstance(requireContext())
+        preferences = NoteStatusPreferences(requireContext())
         super.onCreate(savedInstanceState)
     }
     override fun onCreateView(
@@ -83,6 +93,14 @@ class DetailNoteFragment : Fragment() {
     ): View? {
         viewBinding = LayoutDetailNoteBinding.inflate(inflater, container, false)
         getData()
+        getStatusFormattingBar()
+        getCategoriesData()
+        getCategoriesForThisNote()
+        initOriginalValueForEditText()
+        handleEditTextContent()
+        return viewBinding.root
+    }
+    override fun onResume() {
         viewBinding.detailFragmentLayout.setOnClickListener {
             //TO DO
         }
@@ -129,22 +147,23 @@ class DetailNoteFragment : Fragment() {
             readMode = false
             setReadOnlyMode()
         }
-        initOriginalValueForEditText()
-        handleUndoEditText()
         viewBinding.btnUndo.setOnClickListener {
             undoFunction(rootValue)
         }
-        getCategoriesData()
-        getCategoriesForThisNote()
-        return viewBinding.root
+        viewBinding.clearFormattingButton.setOnClickListener{
+            viewBinding.linearLayoutFormatingBar.visibility = View.GONE
+            preferences.putStatusFormattingBar(false)
+        }
+        handleOnClickItemFormattingBar()
+        super.onResume()
     }
+
     private fun backToHomeScreen(){
         if(!isCreatedData) {
             handleSavingData()
         }
         requireActivity().supportFragmentManager.popBackStack()
     }
-
     private fun getData() {
         val bundle = arguments
         if (bundle != null) {
@@ -178,6 +197,25 @@ class DetailNoteFragment : Fragment() {
             listCategories.addAll(it)
        }
     }
+    private fun getStatusFormattingBar(){
+        if(preferences.getStatusFormattingBar()){
+            viewBinding.linearLayoutFormatingBar.visibility = View.VISIBLE
+        }else{
+            viewBinding.linearLayoutFormatingBar.visibility = View.INVISIBLE
+        }
+    }
+    private fun handleOnClickItemFormattingBar() {
+        viewBinding.boldButton.setOnClickListener {
+            if(isBold){
+                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorItem))
+                isBold = false
+            }else{
+                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
+                isBold = true
+                startIndex = viewBinding.editTextContent.text.length
+            }
+        }
+    }
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun handleSavingData(){
@@ -206,6 +244,7 @@ class DetailNoteFragment : Fragment() {
                 else {
                     noteModel.label = title
                 }
+                noteModel.isBold = isBold
                 GlobalScope.launch(Dispatchers.IO){
                    val insertNoteId = noteDatabase.noteDao().insertNoteAndGetId(noteModel)
                     categoriesInsertForNote?.let {
@@ -219,7 +258,7 @@ class DetailNoteFragment : Fragment() {
             }
 
             "Update" -> {
-                if(note?.title != viewBinding.editTextTitle.text.toString() || note?.content != viewBinding.editTextContent.text.toString()){
+
                     val titleValue = viewBinding.editTextTitle.text.toString()
                     val contentValue = viewBinding.editTextContent.text.toString()
                     val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -238,9 +277,10 @@ class DetailNoteFragment : Fragment() {
                     else {
                         note?.label = titleValue
                     }
+                    note?.isBold = isBold
                     note?.let { noteDatabase.noteDao().updateNote(it) }
                     Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
-                }
+
             }
         }
     }
@@ -253,6 +293,16 @@ class DetailNoteFragment : Fragment() {
         }else{
             viewBinding.linearLayoutDetailNote.setBackgroundColor(resources.getColor(R.color.colorItem))
             viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
+        }
+        if(note?.isBold!!){
+            startIndex = viewBinding.editTextContent.text.length
+            Log.d("Start Index", startIndex.toString())
+            if(note?.color != ""){
+                viewBinding.boldButton.setBackgroundColor(makeColorDarker(Color.parseColor(note?.color)))
+            }else{
+                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
+            }
+            isBold = true
         }
     }
     private fun handleColorTitleLayout(linearLayout: LinearLayout){
@@ -273,7 +323,7 @@ class DetailNoteFragment : Fragment() {
         rootValue = viewBinding.editTextContent.text.toString()
     }
 
-    private fun handleUndoEditText() {
+    private fun handleEditTextContent() {
         val textWatcher = object : TextWatcher {
             private var previousText: String = ""
 
@@ -294,9 +344,26 @@ class DetailNoteFragment : Fragment() {
                 if (s.toString() != previousText && !isChangingCharacter) {
                     undoStack.push(previousText)
                 }
+                if(isBold && s != null){
+                    val start = startIndex
+                    val end = s.length
+                    if(start < end){
+                        Log.d("Index Start end :", start.toString() + end.toString())
+                        removeTextWatcher()
+                        FormattingBarFunctions().applyBold(viewBinding.editTextContent, start,end)
+                        addTextWatcher()
+                        startIndex = end
+                    }
+                }
+            }
+            private fun removeTextWatcher() {
+                viewBinding.editTextContent.removeTextChangedListener(this)
+            }
+
+            private fun addTextWatcher() {
+                viewBinding.editTextContent.addTextChangedListener(this)
             }
         }
-
         viewBinding.editTextContent.addTextChangedListener(textWatcher)
     }
     private fun undoFunction(initString: String) {
@@ -307,7 +374,7 @@ class DetailNoteFragment : Fragment() {
             viewBinding.editTextContent.setSelection(previousText.length)
             isChangingCharacter = false // Reset the flag after undo is done
 
-            if (viewBinding.editTextContent.text.toString() == initString) {
+            if (Html.toHtml(SpannableStringBuilder(viewBinding.editTextContent.text))== initString) {
                 viewBinding.btnUndo.setTextColor(Color.parseColor("#A8A5A5"))
             }
         }
@@ -319,6 +386,7 @@ class DetailNoteFragment : Fragment() {
             handleMenuItemClick(menuItem)
             true
         }
+        //Handle undo menu item
         val undoAllMenuItem = popupMenu.menu.findItem(R.id.undoAll)
         if(rootValue == "" || rootValue == viewBinding.editTextContent.text.toString()){
             undoAllMenuItem.isEnabled = false
@@ -332,6 +400,23 @@ class DetailNoteFragment : Fragment() {
             undoAllMenuItem.title = undoAllMenuItem.title.toString().apply {
                 undoAllMenuItem.title = SpannableString(this).apply {
                     setSpan(ForegroundColorSpan(Color.BLACK), 0, length, 0)
+                }
+            }
+        }
+        //Handle formatting bar item
+        val formattingBarMenuItem = popupMenu.menu.findItem(R.id.open_formatting_bar)
+        if(preferences.getStatusFormattingBar()){
+            formattingBarMenuItem.isEnabled = false
+            formattingBarMenuItem.title = formattingBarMenuItem.title.toString().apply {
+                formattingBarMenuItem.title = SpannableString(this).apply {
+                    setSpan(ForegroundColorSpan(Color.BLACK), 0, length, 0)
+                }
+            }
+        }else {
+            formattingBarMenuItem.isEnabled = true
+            formattingBarMenuItem.title = formattingBarMenuItem.title.toString().apply {
+                formattingBarMenuItem.title = SpannableString(this).apply {
+                    setSpan(ForegroundColorSpan(Color.GRAY), 0, length, 0)
                 }
             }
         }
@@ -405,6 +490,10 @@ class DetailNoteFragment : Fragment() {
             }
             R.id.share_menu -> {
                 openIntentForShareOutSide()
+            }
+            R.id.open_formatting_bar ->{
+                viewBinding.linearLayoutFormatingBar.visibility = View.VISIBLE
+                preferences.putStatusFormattingBar(true)
             }
         }
     }

@@ -34,15 +34,11 @@ import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
-import com.example.myapplication.note.option.ExportNote
+import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.note.noteViewModel.NoteViewModel
-import com.example.myapplication.note.option.ImportNote
+import com.example.myapplication.note.options.ImportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
 import com.google.android.material.navigation.NavigationView
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 @SuppressLint("NotifyDataSetChanged")
 class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
