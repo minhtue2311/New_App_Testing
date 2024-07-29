@@ -279,7 +279,7 @@ class DetailNoteFragment : Fragment() {
                 isItalic = isItalicState
                 isUnderline = isUnderlineState
                 isStrikethrough = isStrikethroughState
-
+                textSize = textSizeValue
             }
             note?.let { noteDatabase.noteDao().updateNote(it) }
             Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
@@ -308,6 +308,7 @@ class DetailNoteFragment : Fragment() {
         noteModel.isItalic = isItalicState
         noteModel.isUnderline = isUnderlineState
         noteModel.isStrikethrough = isStrikethroughState
+        noteModel.textSize = textSizeValue
         GlobalScope.launch(Dispatchers.IO){
             val insertNoteId = noteDatabase.noteDao().insertNoteAndGetId(noteModel)
             categoriesInsertForNote?.let {
@@ -341,7 +342,12 @@ class DetailNoteFragment : Fragment() {
         }
         note?.let {
             setupFormattingButtons(it)
+            Log.d("Text Size", it.textSize.toString())
             isChangedTextSize = it.textSize != 18.0f
+            textSizeValue = it.textSize
+            if(isChangedTextSize){
+                startIndex = viewBinding.editTextContent.text.length
+            }
             setUpBackgroundForItemInFormattingBar(viewBinding.fontSizeButton, isChangedTextSize)
         }
     }
@@ -406,7 +412,7 @@ class DetailNoteFragment : Fragment() {
                     if (s.toString() != previousText.toString() && !isChangingCharacter) {
                         undoStack.push(previousText)
                     }
-                    if (isBoldState || isItalicState || isUnderlineState || isStrikethroughState) {
+                    if (isBoldState || isItalicState || isUnderlineState || isStrikethroughState || isChangedTextSize) {
                         val start = startIndex
                         val end = s.length
                         if (start < end) {
@@ -452,7 +458,7 @@ class DetailNoteFragment : Fragment() {
                 end)
         }
         if (isChangedTextSize) {
-            FormattingBarFunctions().applyTextSize(viewBinding.editTextContent, start, end, textSizeValue)
+            FormattingBarFunctions().applyTextSize(viewBinding.editTextContent, start, end, textSizeValue /18f)
         }
     }
     private fun undoFunction(initString: String) {
@@ -480,6 +486,8 @@ class DetailNoteFragment : Fragment() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
+        binding.seekBarTextSize.progress = textSizeValue.toInt()
+        binding.textSizeTitle.text = "Text Size ${textSizeValue.toInt()}"
         binding.seekBarTextSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             @SuppressLint("SetTextI18n")
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -503,7 +511,12 @@ class DetailNoteFragment : Fragment() {
             val selectedSize = binding.seekBarTextSize.progress
             isChangedTextSize = selectedSize.toFloat() != 18f
             textSizeValue = selectedSize.toFloat()
+            Log.d("Text Size Value", textSizeValue.toString())
             setUpBackgroundForItemInFormattingBar(viewBinding.fontSizeButton, isChangedTextSize)
+            if(isChangedTextSize){
+                startIndex = viewBinding.editTextContent.text.length
+            }
+            dialog.cancel()
         }
         dialog.show()
     }
