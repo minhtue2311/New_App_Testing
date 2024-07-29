@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/_16sdp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/textSizeTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:textColor="@color/black"
+        android:textSize="18sp"
+        android:text="@string/text_size"
+        android:layout_marginBottom="16dp"/>
+
+    <SeekBar
+        android:id="@+id/seekBarTextSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:min="6"
+        android:max="64"
+        android:progress="18"/>
+
+    <Button
+        android:id="@+id/buttonSetDefault"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/set_default_18"
+        android:layout_marginTop="16dp"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="16dp">
+        <Button
+            android:id="@+id/btnCancelTextSize"
+            android:layout_width="@dimen/_50sdp"
+            android:layout_height="@dimen/_20sdp"
+            android:background="@null"
+            android:layout_marginEnd="@dimen/_55sdp"
+            android:textColor="@color/theme_background"
+            android:text="@string/cancel"/>
+        <Button
+            android:id="@+id/btnOkTextSize"
+            android:layout_width="@dimen/_50sdp"
+            android:layout_height="@dimen/_20sdp"
+            android:background="@null"
+            android:layout_marginStart="@dimen/_50sdp"
+            android:textColor="@color/theme_background"
+            android:text="@string/ok"/>
+    </RelativeLayout>
+</LinearLayout>

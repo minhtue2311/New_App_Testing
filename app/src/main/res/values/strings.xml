@@ -52,4 +52,6 @@
     <string name="font_size">textSizeButton\n</string>
     <string name="clear_formatting">clear\n</string>
     <string name="open_formatting_bar">Open Formatting Bar</string>
+    <string name="text_size">Text size</string>
+    <string name="set_default_18">SET DEFAULT (18)</string>
 </resources>

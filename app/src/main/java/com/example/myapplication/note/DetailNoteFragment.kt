@@ -12,13 +12,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
-import android.text.Html
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
-import android.text.Spanned
 import android.text.TextWatcher
-import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.LayoutInflater
@@ -27,8 +24,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.PopupMenu
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -39,6 +39,7 @@ import com.example.myapplication.adapter.AdapterSelectCategory
 import com.example.myapplication.databinding.LayoutColorPickerBinding
 import com.example.myapplication.databinding.LayoutCustomSelectCategoryBinding
 import com.example.myapplication.databinding.LayoutDetailNoteBinding
+import com.example.myapplication.databinding.LayoutDialogChangeTextSizeBinding
 import com.example.myapplication.databinding.LayoutShowInfoNoteBinding
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
@@ -46,6 +47,7 @@ import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.model.relation.NoteCategoryRef
 import com.example.myapplication.note.formattingBar.FormattingBarFunctions
+import com.example.myapplication.note.handleFormatString.FormatString
 import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -56,6 +58,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.Stack
+import kotlin.reflect.KMutableProperty0
 
 
 class DetailNoteFragment : Fragment() {
@@ -64,7 +67,7 @@ class DetailNoteFragment : Fragment() {
     private var type: String = "Create"
     private lateinit var noteDatabase: NoteDatabase
     private lateinit var preferences : NoteStatusPreferences
-    private var colorInstant = "#F2EDC0"
+    private var colorInstant = "#ffffdd"
     private var undoStack : Stack<Spannable> = Stack()
     private var rootValue : String = ""
     private var valueBeforeSearch : String = ""
@@ -75,12 +78,17 @@ class DetailNoteFragment : Fragment() {
     private var categoriesInsertForNote : Categories? = null
     private var readMode = false
     private var clickCount = 0
-    private val doubleClickThreshold = 500L // Thời gian ngưỡng cho nhấn đúp (ms)
+    private val doubleClickThreshold = 500L
     private val handler = Handler(Looper.getMainLooper())
 
     //Variable for state formatting bar
     private var startIndex = 0
-    private var isBold = false
+    private var isBoldState = false
+    private var isItalicState = false
+    private var isUnderlineState = false
+    private var isStrikethroughState = false
+    private var isChangedTextSize = false
+    private var textSizeValue = 18f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         noteDatabase = NoteDatabase.getInstance(requireContext())
@@ -98,7 +106,6 @@ class DetailNoteFragment : Fragment() {
         getCategoriesData()
         getCategoriesForThisNote()
         initOriginalValueForEditText()
-        handleEditTextContent()
         return viewBinding.root
     }
     override fun onResume() {
@@ -119,6 +126,9 @@ class DetailNoteFragment : Fragment() {
                     clickCount = 0
                     handler.removeCallbacksAndMessages(null)
                 }
+            }
+            else {
+                viewBinding.editTextContent.setSelection(viewBinding.editTextContent.text.length)
             }
         }
         viewBinding.backFromEditMode.setOnClickListener {
@@ -156,6 +166,7 @@ class DetailNoteFragment : Fragment() {
             preferences.putStatusFormattingBar(false)
         }
         handleOnClickItemFormattingBar()
+        handleEditTextContent()
         super.onResume()
     }
 
@@ -206,119 +217,149 @@ class DetailNoteFragment : Fragment() {
         }
     }
     private fun handleOnClickItemFormattingBar() {
-        viewBinding.boldButton.setOnClickListener {
-            if(isBold){
-                isBold = false
-                if(note?.color != ""){
-                    viewBinding.boldButton.setBackgroundColor(Color.parseColor(note?.color))
-                }else{
-                    viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorItem))
-                }
-            }else{
-                isBold = true
+        onClickButtonEvent(viewBinding.boldButton, ::isBoldState)
+        onClickButtonEvent(viewBinding.italicButton, ::isItalicState)
+        onClickButtonEvent(viewBinding.underlineButton, ::isUnderlineState)
+        onClickButtonEvent(viewBinding.strikethroughButton, ::isStrikethroughState)
+        viewBinding.fontSizeButton.setOnClickListener {
+            showChangeTextSizeDialog()
+        }
+    }
+    private fun onClickButtonEvent(button : ImageButton, state : KMutableProperty0<Boolean>){
+       //KMutableProperty0 <Boolean> is a bool variable that can be changed inside another functions
+        button.setOnClickListener {
+            val newState = !state.get() //Inverse value
+            state.set(newState) //Set new value
+            setUpBackgroundForItemInFormattingBar(button, newState)
+            if(newState){
                 startIndex = viewBinding.editTextContent.text.length
-                if(note?.color != ""){
-                    viewBinding.boldButton.setBackgroundColor(makeColorDarker(Color.parseColor(note?.color)))
-                }else{
-                    viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
-                }
             }
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
+    private fun setUpBackgroundForItemInFormattingBar(view: View, status: Boolean) {
+        if (!status) {
+            view.setBackgroundColor(Color.parseColor(colorInstant))
+        } else {
+            if (colorInstant != "#ffffdd") {
+                view.setBackgroundColor(makeColorDarker(Color.parseColor(colorInstant)))
+            }else{
+                view.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
+            }
+        }
+    }
     private fun handleSavingData(){
         when (type) {
-            "Create" -> {
-                var title = ""
-                var content = ""
-                if (viewBinding.editTextTitle.text.isNotEmpty()) {
-                    title = viewBinding.editTextTitle.text.toString()
-                }
-                if (viewBinding.editTextContent.text.isNotEmpty()) {
-                    content = viewBinding.editTextContent.text.toString()
-                }
-                val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                val dateString = sdf.format(Date())
-                val noteModel = Note(title, content, dateString, dateString)
-                if(colorInstant != "#F2EDC0"){
-                    noteModel.color = colorInstant
-                }
-                if(title == "" && content == ""){
-                    noteModel.label = "Untitled"
-                }
-                else if(title == ""){
-                    noteModel.label = content
-                }
-                else {
-                    noteModel.label = title
-                }
-                noteModel.isBold = isBold
-                GlobalScope.launch(Dispatchers.IO){
-                   val insertNoteId = noteDatabase.noteDao().insertNoteAndGetId(noteModel)
-                    categoriesInsertForNote?.let {
-                        val crossRef = NoteCategoryRef(insertNoteId.toInt(), it.idCategory!!)
-                        noteDatabase.noteDao().insertNoteCategoryCrossRef(crossRef)
-                    }
-                }
-
-                isCreatedData = true
-                Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
-            }
-
-            "Update" -> {
-
-                    val titleValue = viewBinding.editTextTitle.text.toString()
-                    val contentValue = viewBinding.editTextContent.text.toString()
-                    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                    val dateString = sdf.format(Date())
-                    note?.apply {
-                        title = titleValue
-                        content = contentValue
-                        editedDate = dateString
-                    }
-                    if(titleValue == "" && contentValue == ""){
-                        note?.label = "Untitled"
-                    }
-                    else if(titleValue == ""){
-                        note?.label = contentValue
-                    }
-                    else {
-                        note?.label = titleValue
-                    }
-                    note?.isBold = isBold
-                    note?.let { noteDatabase.noteDao().updateNote(it) }
-                    Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
-
-            }
+            "Create" -> createNote()
+            "Update" -> updateNote()
         }
     }
+    private fun updateNote() {
+        val titleValue = viewBinding.editTextTitle.text.toString().trim()
+        val contentValue = viewBinding.editTextContent.text.toString().trim()
+
+        if (titleValue != note?.title || contentValue != note?.content ||
+            note?.isBold != isBoldState || note?.isUnderline != isUnderlineState ||
+            note?.isItalic != isItalicState || note?.isStrikethrough != isStrikethroughState || note?.textSize != textSizeValue
+        ) {
+            val spannableStringResult = getSpannableStringFromEditText(viewBinding.editTextContent)
+            val dateString = getCurrentDateString()
+
+            note?.apply {
+                title = titleValue
+                content = contentValue
+                editedDate = dateString
+                label = when {
+                    titleValue.isEmpty() && contentValue.isEmpty() -> "Untitled"
+                    titleValue.isEmpty() -> contentValue
+                    else -> titleValue
+                }
+                spannableString = spannableStringResult
+                isBold = isBoldState
+                isItalic = isItalicState
+                isUnderline = isUnderlineState
+                isStrikethrough = isStrikethroughState
+
+            }
+            note?.let { noteDatabase.noteDao().updateNote(it) }
+            Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
+        }
+    }
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun createNote() {
+        val title = viewBinding.editTextTitle.text.toString().trim().ifEmpty { "" }
+        val content = viewBinding.editTextContent.text.toString().trim().ifEmpty { "" }
+        val spannableString = getSpannableStringFromEditText(viewBinding.editTextContent)
+        val dateString = getCurrentDateString()
+        val noteModel = Note(
+            title = title,
+            content = content,
+            createDate = dateString,
+            editedDate = dateString,
+        )
+        noteModel.color = if(colorInstant != "#ffffdd") colorInstant else ""
+        noteModel.label = when{
+            title.isEmpty() && content.isEmpty() -> "Untitled"
+            title.isEmpty() -> content
+            else -> title
+        }
+        noteModel.spannableString = spannableString
+        noteModel.isBold = isBoldState
+        noteModel.isItalic = isItalicState
+        noteModel.isUnderline = isUnderlineState
+        noteModel.isStrikethrough = isStrikethroughState
+        GlobalScope.launch(Dispatchers.IO){
+            val insertNoteId = noteDatabase.noteDao().insertNoteAndGetId(noteModel)
+            categoriesInsertForNote?.let {
+                val crossRef = NoteCategoryRef(insertNoteId.toInt(), it.idCategory!!)
+                noteDatabase.noteDao().insertNoteCategoryCrossRef(crossRef)
+            }
+        }
+        isCreatedData = true
+        Toast.makeText(requireContext(), "Save", Toast.LENGTH_SHORT).show()
+    }
+    private fun getSpannableStringFromEditText(editText: EditText): String {
+        val spannableContent = editText.text as Spannable
+        return FormatString().spannableToHtml(spannableContent).trim()
+    }
+    private fun getCurrentDateString(): String {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        return sdf.format(Date())
+    }
+
     private fun bindData() {
         viewBinding.editTextTitle.setText(note?.title.toString())
-        viewBinding.editTextContent.setText(note?.content.toString())
+        val spannableContent = FormatString().htmlToSpannable(note?.spannableString!!).trim()
+        viewBinding.editTextContent.setText(spannableContent)
         if(note?.color != ""){
+            colorInstant = note?.color!!
             viewBinding.linearLayoutDetailNote.setBackgroundColor(Color.parseColor(note?.color))
             viewBinding.layoutTitle.background = ColorDrawable(makeColorDarker(Color.parseColor(note?.color)))
         }else{
             viewBinding.linearLayoutDetailNote.setBackgroundColor(resources.getColor(R.color.colorItem))
             viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
         }
-        if(note?.isBold!!){
-            startIndex = viewBinding.editTextContent.text.length
-            isBold = true
-            if(note?.color != ""){
-                viewBinding.boldButton.setBackgroundColor(makeColorDarker(Color.parseColor(note?.color)))
-            }else{
-                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
-            }
-        }else{
-            if(note?.color != ""){
-                viewBinding.boldButton.setBackgroundColor(Color.parseColor(note?.color))
-            }else{
-                viewBinding.boldButton.setBackgroundColor(resources.getColor(R.color.colorBackgroundButton))
+        note?.let {
+            setupFormattingButtons(it)
+            isChangedTextSize = it.textSize != 18.0f
+            setUpBackgroundForItemInFormattingBar(viewBinding.fontSizeButton, isChangedTextSize)
+        }
+    }
+    private fun setupFormattingButtons(note: Note) {
+        val formattingStates = listOf(
+            Triple(note.isBold, ::isBoldState, viewBinding.boldButton),
+            Triple(note.isItalic, ::isItalicState, viewBinding.italicButton),
+            Triple(note.isUnderline, ::isUnderlineState, viewBinding.underlineButton),
+            Triple(note.isStrikethrough, ::isStrikethroughState, viewBinding.strikethroughButton)
+        )
+
+        formattingStates.forEach { (state, formatFlag, button) ->
+            formatFlag.set(state)
+            setUpBackgroundForItemInFormattingBar(button, state)
+            if (state) {
+                startIndex = viewBinding.editTextContent.text.length
             }
         }
-
     }
     private fun handleColorTitleLayout(linearLayout: LinearLayout){
         if(note?.color != ""){
@@ -353,25 +394,27 @@ class DetailNoteFragment : Fragment() {
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 // Update the undo button color if there is a change
-                if (s.toString() != rootValue) {
+                if (s.toString().trim() != rootValue) {
                     viewBinding.btnUndo.setTextColor(resources.getColor(R.color.color1))
+                    viewBinding.btnUndo.isEnabled = true
                 }
             }
 
             override fun afterTextChanged(s: Editable?) {
-                // Add the previous text to the stack only if the current text is different than the older
-                if (s.toString() != previousText.toString() && !isChangingCharacter) {
-                    undoStack.push(previousText)
-                }
-                if(isBold && s != null){
-                    val start = startIndex
-                    val end = s.length
-                    if(start < end){
-                        Log.d("Index Start end :", start.toString() + end.toString())
-                        removeTextWatcher()
-                        FormattingBarFunctions().applyBold(viewBinding.editTextContent, start,end)
-                        addTextWatcher()
-                        startIndex = end
+                if (s != null) {
+                    // Add the previous text to the stack only if the current text is different than the older
+                    if (s.toString() != previousText.toString() && !isChangingCharacter) {
+                        undoStack.push(previousText)
+                    }
+                    if (isBoldState || isItalicState || isUnderlineState || isStrikethroughState) {
+                        val start = startIndex
+                        val end = s.length
+                        if (start < end) {
+                            removeTextWatcher()
+                            applyFormatting(start, end)
+                            addTextWatcher()
+                            startIndex = end
+                        }
                     }
                 }
             }
@@ -385,6 +428,33 @@ class DetailNoteFragment : Fragment() {
         }
         viewBinding.editTextContent.addTextChangedListener(textWatcher)
     }
+    private fun applyFormatting(start : Int, end : Int){
+        if(isBoldState){
+            FormattingBarFunctions().applyBold(
+                viewBinding.editTextContent,
+                start,
+                end
+            )
+        }
+        if(isItalicState){
+            FormattingBarFunctions().applyItalic(viewBinding.editTextContent,
+                start,
+                end)
+        }
+        if(isUnderlineState){
+            FormattingBarFunctions().applyUnderline(viewBinding.editTextContent,
+                start,
+                end)
+        }
+        if(isStrikethroughState){
+            FormattingBarFunctions().applyStrikethrough(viewBinding.editTextContent,
+                start,
+                end)
+        }
+        if (isChangedTextSize) {
+            FormattingBarFunctions().applyTextSize(viewBinding.editTextContent, start, end, textSizeValue)
+        }
+    }
     private fun undoFunction(initString: String) {
         if (undoStack.isNotEmpty()) {
             val previousText = undoStack.pop()
@@ -395,8 +465,47 @@ class DetailNoteFragment : Fragment() {
 
             if (viewBinding.editTextContent.text.toString()== initString) {
                 viewBinding.btnUndo.setTextColor(Color.parseColor("#A8A5A5"))
+                viewBinding.btnUndo.isEnabled = false
             }
         }
+    }
+    @SuppressLint("SetTextI18n")
+    private fun showChangeTextSizeDialog(){
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val binding =LayoutDialogChangeTextSizeBinding.inflate(dialog.layoutInflater)
+        dialog.setContentView(binding.root)
+        dialog.setCancelable(true)
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
+        binding.seekBarTextSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            @SuppressLint("SetTextI18n")
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                binding.textSizeTitle.textSize = progress.toFloat()
+                binding.textSizeTitle.text = "Text Size $progress"
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+        binding.buttonSetDefault.setOnClickListener {
+            binding.seekBarTextSize.progress = 18
+            binding.textSizeTitle.textSize = 18f
+            binding.textSizeTitle.text = "Text Size 18"
+        }
+        binding.btnCancelTextSize.setOnClickListener {
+            dialog.cancel()
+        }
+        binding.btnOkTextSize.setOnClickListener {
+            val selectedSize = binding.seekBarTextSize.progress
+            isChangedTextSize = selectedSize.toFloat() != 18f
+            textSizeValue = selectedSize.toFloat()
+            setUpBackgroundForItemInFormattingBar(viewBinding.fontSizeButton, isChangedTextSize)
+        }
+        dialog.show()
     }
     private fun showPopupMenu(view: View) {
         val popupMenu = PopupMenu(requireContext(), view)
@@ -692,12 +801,7 @@ class DetailNoteFragment : Fragment() {
             WindowManager.LayoutParams.WRAP_CONTENT
         )
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
-        if(note != null){
-            if(note!!.color != ""){
-                colorInstant = note!!.color
-            }
-        }
-        if(colorInstant != "#F2EDC0"){
+        if(colorInstant != "#ffffdd"){
             binding.txtSelectColor.setBackgroundColor(Color.parseColor(colorInstant))
         }else {
             binding.txtSelectColor.setBackgroundColor(Color.WHITE)
@@ -734,11 +838,11 @@ class DetailNoteFragment : Fragment() {
 
         //Remove color
         binding.btnRemoveColor.setOnClickListener {
-            colorInstant = "#F2EDC0"
+            colorInstant = "#ffffdd"
             binding.txtSelectColor.setBackgroundColor(Color.WHITE)
         }
         binding.btnOk.setOnClickListener {
-                if(colorInstant != "#F2EDC0"){
+                if(colorInstant != "#ffffdd"){
                     if(note != null){
                         note?.color = colorInstant
                         note?.let { noteDatabase.noteDao().updateNote(it) }
@@ -760,6 +864,10 @@ class DetailNoteFragment : Fragment() {
                        viewBinding.layoutTitle.setBackgroundColor(resources.getColor(R.color.theme_background))
                    }
                 }
+                setUpBackgroundForItemInFormattingBar(viewBinding.boldButton, isBoldState)
+                setUpBackgroundForItemInFormattingBar(viewBinding.italicButton, isItalicState)
+                setUpBackgroundForItemInFormattingBar(viewBinding.underlineButton, isUnderlineState)
+                setUpBackgroundForItemInFormattingBar(viewBinding.strikethroughButton, isStrikethroughState)
             dialog.cancel()
         }
         binding.btnCancel.setOnClickListener {

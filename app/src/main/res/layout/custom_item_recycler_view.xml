@@ -18,6 +18,7 @@
         android:textSize="16sp"
         android:layout_marginTop="15dp"
         android:layout_marginStart="15dp"
+        android:maxLines="4"
         android:text="@string/title"/>
     <RelativeLayout
         android:layout_width="match_parent"

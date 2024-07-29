@@ -17,7 +17,12 @@ class Note(
     var color: String = ""
     var label: String = ""
     var listCategories : String = ""
+    var spannableString : String = ""
     var isBold : Boolean = false
+    var isItalic : Boolean = false
+    var isUnderline : Boolean = false
+    var isStrikethrough : Boolean = false
+    var textSize : Float = 18f
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readString() ?: "",
@@ -28,7 +33,12 @@ class Note(
         color = parcel.readString() ?: ""
         label = parcel.readString() ?: ""
         listCategories = parcel.readString() ?: ""
+        spannableString = parcel.readString() ?: ""
         isBold =  parcel.readByte() != 0.toByte()
+        isItalic = parcel.readByte() != 0.toByte()
+        isUnderline = parcel.readByte() != 0.toByte()
+        isStrikethrough = parcel.readByte() != 0.toByte()
+        textSize = parcel.readFloat()
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -40,7 +50,12 @@ class Note(
         parcel.writeString(color)
         parcel.writeString(label)
         parcel.writeString(listCategories)
+        parcel.writeString(spannableString)
         parcel.writeByte(if (isBold) 1 else 0)
+        parcel.writeByte(if (isItalic) 1 else 0)
+        parcel.writeByte(if (isUnderline) 1 else 0)
+        parcel.writeByte(if(isStrikethrough) 1 else 0)
+        parcel.writeValue(textSize)
     }
 
     override fun describeContents(): Int {
