@@ -52,6 +52,16 @@ interface NoteDAO {
     @Query("SELECT COUNT(*) FROM NoteCategoryRef WHERE idNote = :noteId AND idCategory = :categoryId")
     fun checkNoteCategoryRefExists(noteId: Int, categoryId: Int): Int
 
+    @Insert
+    fun moveNoteToTrash(trash: Trash)
+
+
+    @Query("SELECT * FROM Trash")
+    fun getAllNoteFromTrash() : LiveData<List<Trash>>
+
+    @Delete
+    fun deleteTrash(trash: Trash)
+
 }
 
 @Dao

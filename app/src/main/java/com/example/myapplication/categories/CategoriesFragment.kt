@@ -28,6 +28,7 @@ import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.note.NoteFragment
+import com.example.myapplication.trash.TrashFragment
 import com.google.android.material.navigation.NavigationView
 
 class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
@@ -171,6 +172,9 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
             R.id.editCategories -> {
 
             }
+            R.id.delete -> {
+                onChangeToTrashFragment()
+            }
             2311 ->{
                 onChangeToNoteFragment("Uncategorized")
             }
@@ -195,6 +199,13 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
+    }
+
+    private fun onChangeToTrashFragment() {
+        val trashFragment = TrashFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.replace(R.id.mainLayout, trashFragment)
+        fragmentTrans.commit()
     }
 
     private fun onChangeToNoteFragmentWithCategories(value : Categories) {

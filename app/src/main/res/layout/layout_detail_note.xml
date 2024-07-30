@@ -189,7 +189,7 @@
                 android:layout_marginStart="@dimen/_5sdp"
                 android:fontFamily="sans-serif-condensed"
                 android:hint="@string/enter_text"
-                android:paddingBottom="@dimen/_250sdp"
+                android:paddingBottom="@dimen/_450sdp"
                 android:textColor="@color/black"
                 android:gravity="start"
                 android:textSize="18sp" />

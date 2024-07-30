@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.myapplication.model.relation.NoteCategoryRef
 
-@Database(entities = [Note::class, Categories ::class, NoteCategoryRef ::class], version = 1)
+@Database(entities = [Note::class, Categories ::class,Trash ::class,NoteCategoryRef ::class], version = 1)
     abstract class NoteDatabase : RoomDatabase() {
         companion object {
 

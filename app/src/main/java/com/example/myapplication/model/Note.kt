@@ -23,6 +23,8 @@ class Note(
     var isUnderline : Boolean = false
     var isStrikethrough : Boolean = false
     var textSize : Float = 18f
+    var foregroundColorText : String = ""
+    var backgroundColorText : String = ""
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readString() ?: "",
@@ -39,6 +41,8 @@ class Note(
         isUnderline = parcel.readByte() != 0.toByte()
         isStrikethrough = parcel.readByte() != 0.toByte()
         textSize = parcel.readFloat()
+        foregroundColorText = parcel.readString() ?: ""
+        backgroundColorText = parcel.readString() ?: ""
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -56,6 +60,8 @@ class Note(
         parcel.writeByte(if (isUnderline) 1 else 0)
         parcel.writeByte(if(isStrikethrough) 1 else 0)
         parcel.writeValue(textSize)
+        parcel.writeString(foregroundColorText)
+        parcel.writeString(backgroundColorText)
     }
 
     override fun describeContents(): Int {

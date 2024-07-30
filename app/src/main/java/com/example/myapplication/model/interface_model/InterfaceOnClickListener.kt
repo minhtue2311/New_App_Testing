@@ -8,4 +8,5 @@ interface InterfaceOnClickListener {
     fun onClickColorItem(color : String)
     fun onSelectedNote(listNoteSelectedResult : ArrayList<Note>)
     fun onClickCategoriesItem(categories: Categories)
+
 }

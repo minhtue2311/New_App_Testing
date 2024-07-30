@@ -32,12 +32,14 @@ import com.example.myapplication.databinding.LayoutNoteFragmentBinding
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
+import com.example.myapplication.model.Trash
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.note.noteViewModel.NoteViewModel
 import com.example.myapplication.note.options.ImportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
+import com.example.myapplication.trash.TrashFragment
 import com.google.android.material.navigation.NavigationView
 
 @SuppressLint("NotifyDataSetChanged")
@@ -140,6 +142,26 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             .setPositiveButton("Yes") { dialogInterface, _ ->
                 for (note in listNoteSelected) {
                     noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(note.idNote!!)
+                   note.let {
+                       val trashModel = Trash(
+                           idNoteTrash = null,
+                           title = it.title,
+                           content = it.content,
+                           createDate = it.createDate,
+                           editedDate = it.editedDate,
+                           color = it.color,
+                           label = it.label,
+                           spannableString = it.spannableString,
+                           isBold = it.isBold,
+                           isItalic = it.isItalic,
+                           isUnderline = it.isUnderline,
+                           isStrikethrough = it.isStrikethrough,
+                           textSize = it.textSize,
+                           foregroundColorText = it.foregroundColorText,
+                           backgroundColorText = it.foregroundColorText,
+                       )
+                       noteDatabase.noteDao().moveNoteToTrash(trashModel)
+                   }
                     noteDatabase.noteDao().delete(note)
                 }
                 Toast.makeText(requireContext(), "Delete Successfully", Toast.LENGTH_SHORT)
@@ -452,6 +474,9 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             R.id.editCategories -> {
                 onChangedToCategoriesFragment()
             }
+            R.id.delete ->{
+                onChangeToTrashFragment()
+            }
             2311 -> {
                 type = "Uncategorized"
                 viewBinding.contentTxt.visibility = View.VISIBLE
@@ -483,6 +508,13 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
+    }
+
+    private fun onChangeToTrashFragment() {
+        val trashFragment = TrashFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.replace(R.id.mainLayout, trashFragment)
+        fragmentTrans.commit()
     }
 
     private fun onChangedToCategoriesFragment() {

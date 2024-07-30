@@ -23,6 +23,23 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/_15sdp" />
 
+    <TextView
+        android:id="@+id/textViewOpacity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/opacity"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:layout_marginTop="@dimen/_10sdp"
+        android:layout_gravity="center_horizontal"/>
+    <SeekBar
+        android:id="@+id/seekBarTextSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:min="0"
+        android:max="100"
+        android:layout_marginTop="@dimen/_5sdp"
+        android:progress="100"/>
 
     <Button
         android:id="@+id/btnRemoveColor"
