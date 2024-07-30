@@ -164,7 +164,7 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
                    }
                     noteDatabase.noteDao().delete(note)
                 }
-                Toast.makeText(requireContext(), "Delete Successfully", Toast.LENGTH_SHORT)
+                Toast.makeText(requireContext(), "Delete ${listNoteSelected.size} notes", Toast.LENGTH_SHORT)
                     .show()
                 listNoteSelected.clear()
                 viewBinding.layoutSelectedNote.visibility = View.GONE

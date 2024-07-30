@@ -657,7 +657,7 @@ class DetailNoteFragment : Fragment() {
                 startIndex = viewBinding.editTextContent.text.length
                 viewBinding.colorTextButton.setBackgroundColor(Color.parseColor(colorText))
             }else{
-                viewBinding.colorTextButton.setBackgroundColor(resources.getColor(R.color.colorItem))
+                viewBinding.colorTextButton.setBackgroundColor(Color.parseColor(colorInstant))
             }
 
             //Background Color Text
@@ -667,7 +667,7 @@ class DetailNoteFragment : Fragment() {
                 startIndex = viewBinding.editTextContent.text.length
                 viewBinding.colorBackgroundButton.setBackgroundColor(Color.parseColor(backgroundColor))
             }else{
-                viewBinding.colorBackgroundButton.setBackgroundColor(resources.getColor(R.color.colorItem))
+                viewBinding.colorBackgroundButton.setBackgroundColor(Color.parseColor(colorInstant))
             }
         }
     }

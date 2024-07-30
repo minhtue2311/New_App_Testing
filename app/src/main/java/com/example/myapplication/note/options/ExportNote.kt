@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.widget.Toast
 import com.example.myapplication.model.Note
+import com.example.myapplication.model.Trash
 import java.io.OutputStream
 
 class ExportNote(private var context : Context, private var activity: Activity) {
@@ -71,6 +72,11 @@ class ExportNote(private var context : Context, private var activity: Activity) 
         outputStream.flush()
         outputStream.close()
     }
+    private fun writeNoteInTrashToStream(noteInTrash: Trash, outputStream: OutputStream) {
+        outputStream.write(noteInTrash.content.toByteArray())
+        outputStream.flush()
+        outputStream.close()
+    }
     fun saveListNoteToDocument(uri: Uri, listNote : ArrayList<Note>){
         val contentResolver = activity.contentResolver
         val docUri = DocumentsContract.buildDocumentUriUsingTree(
@@ -101,6 +107,41 @@ class ExportNote(private var context : Context, private var activity: Activity) 
                 }
             }
             Toast.makeText(context, "Export ${listNote.size} txt File", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    fun saveListNoteInTrashToDocument(uri: Uri, listNoteInTrash : ArrayList<Trash>){
+        val contentResolver = activity.contentResolver
+        val docUri = DocumentsContract.buildDocumentUriUsingTree(
+            uri,
+            DocumentsContract.getTreeDocumentId(uri)
+        )
+
+        try {
+            for (note in listNoteInTrash) {
+                val fileName = "${note.label}.txt"
+                val newUri = DocumentsContract.createDocument(
+                    contentResolver,
+                    docUri,
+                    "text/plain",
+                    fileName
+                )
+
+                if (newUri != null) {
+                    contentResolver.openOutputStream(newUri).use { outputStream ->
+                        if (outputStream != null) {
+                            writeNoteInTrashToStream(note, outputStream)
+                        } else {
+                            Toast.makeText(context, "Error opening output stream", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "Error creating document", Toast.LENGTH_SHORT).show()
+                }
+            }
+            Toast.makeText(context, "Export ${listNoteInTrash.size} txt File", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_SHORT).show()

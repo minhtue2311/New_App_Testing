@@ -1,7 +1,13 @@
 package com.example.myapplication.trash
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
+import android.app.Dialog
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -9,6 +15,9 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
+import android.view.WindowManager
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -16,12 +25,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
 import com.example.myapplication.adapter.AdapterTrash
 import com.example.myapplication.categories.CategoriesFragment
+import com.example.myapplication.databinding.CustomLayoutDialogSortBinding
+import com.example.myapplication.databinding.LayoutActionItemTrashBinding
 import com.example.myapplication.databinding.LayoutTrashFragmentBinding
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.Trash
+import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.note.NoteFragment
+import com.example.myapplication.note.options.ExportNote
+import com.example.myapplication.note.options.ImportNote
 import com.google.android.material.navigation.NavigationView
 
 class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
@@ -50,6 +64,13 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         getCategoriesData()
         setUpRecyclerView()
         getTrashData()
+        viewBinding.checkBox.setOnClickListener {
+            if(viewBinding.checkBox.isChecked){
+                adapter.onAllSelected()
+            }else{
+                adapter.onAllUnSelected()
+            }
+        }
         return viewBinding.root
     }
 
@@ -57,15 +78,113 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         viewBinding.bin.setOnClickListener {
             showDialogConfirmRestore()
         }
+        viewBinding.checkBox.setOnClickListener {
+            if(viewBinding.checkBox.isChecked){
+                adapter.onAllSelected()
+            }else{
+                adapter.onAllUnSelected()
+            }
+        }
+        viewBinding.optionButton.setOnClickListener { view ->
+            showPopupMenu(view)
+        }
         super.onResume()
     }
 
+    private fun showPopupMenu(view: View?) {
+        val popupMenu = PopupMenu(requireContext(), view)
+        popupMenu.menuInflater.inflate(R.menu.menu_options_item_trash, popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            handleMenuItemClick(menuItem)
+            true
+        }
+        popupMenu.show()
+    }
+    private fun handleMenuItemClick(menuItem: MenuItem) {
+        when (menuItem.itemId) {
+            R.id.undeleteAll -> {
+                restoreAllTrash()
+            }
+            R.id.export_trash -> {
+                openDocumentTree()
+            }
+            R.id.clean ->{
+                cleanAllTrash()
+            }
+        }
+    }
+
+    private fun cleanAllTrash() {
+        showDialogConfirmClean()
+    }
+
+    private fun showDialogConfirmClean() {
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("Confirm")
+            .setMessage("All trashed notes will be deleted permanently. Are you sure that you want to delete all of the trashed note ?")
+            .setPositiveButton("Yes") { dialogInterface, _ ->
+               for(trash in listTrash){
+                   noteDatabase.noteDao().deleteTrash(trash)
+               }
+               Toast.makeText(requireContext(),"Delete Successfully",Toast.LENGTH_SHORT).show()
+                dialogInterface.cancel()
+            }
+            .setNegativeButton("No") { dialogInterface, _ ->
+                dialogInterface.cancel()
+            }
+        dialog.show()
+    }
+
+    private fun openDocumentTree() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        startActivityForResult(intent, 1 )
+    }
+    @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+            val uri: Uri? = data?.data
+            if (uri != null) {
+                ExportNote(requireContext(), requireActivity()).saveListNoteInTrashToDocument(uri, listTrash)
+            }
+        }
+    }
+
+    private fun restoreAllTrash() {
+        for(trash in listTrash){
+            trash.let {
+                val note = Note(
+                    title = it.title,
+                    content = it.content,
+                    createDate = it.createDate,
+                    editedDate = it.editedDate,
+                )
+                note.label = trash.label
+                note.color =trash.color
+                note.spannableString = trash.spannableString
+                note.isBold = trash.isBold
+                note.isItalic = trash.isItalic
+                note.isUnderline = trash.isUnderline
+                note.isStrikethrough = trash.isStrikethrough
+                note.textSize = trash.textSize
+                note.foregroundColorText = trash.foregroundColorText
+                note.backgroundColorText = trash.backgroundColorText
+                noteDatabase.noteDao().insertNote(note)
+            }
+            noteDatabase.noteDao().deleteTrash(trash)
+        }
+        Toast.makeText(requireContext(), "Restore ${listTrash.size} notes", Toast.LENGTH_SHORT)
+            .show()
+        listTrash.clear()
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
     private fun showDialogConfirmRestore() {
         val dialog = AlertDialog.Builder(context)
             .setTitle("Confirm")
             .setMessage("Do you want to restore this selected notes ?")
             .setPositiveButton("Yes") { dialogInterface, _ ->
-                for (trash in listTrash) {
+                for (trash in listTrashSelected) {
                     trash.let {
                         val note = Note(
                             title = it.title,
@@ -87,9 +206,9 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                     }
                     noteDatabase.noteDao().deleteTrash(trash)
                 }
-                Toast.makeText(requireContext(), "Delete Successfully", Toast.LENGTH_SHORT)
+                Toast.makeText(requireContext(), "Restore ${listTrashSelected.size} notes", Toast.LENGTH_SHORT)
                     .show()
-                listTrash.clear()
+                listTrashSelected.clear()
                 viewBinding.layoutSelectedNote.visibility = View.GONE
                 viewBinding.layoutMainToolBar.visibility = View.VISIBLE
                 adapter.isSelected = false
@@ -108,7 +227,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         val linearLayout = LinearLayoutManager(requireContext())
         adapter = AdapterTrash(listTrash, object : AdapterTrash.OnClickTrashListener{
             override fun onClickTrashListener(trash: Trash) {
-
+                openDialogForItemTrash(trash)
             }
 
             override fun onLongClickTrashListener(listTrash: ArrayList<Trash>) {
@@ -128,6 +247,51 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         viewBinding.recyclerViewTrash.adapter = adapter
         viewBinding.recyclerViewTrash.layoutManager = linearLayout
     }
+
+    private fun openDialogForItemTrash(trash: Trash) {
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        val binding = LayoutActionItemTrashBinding.inflate(dialog.layoutInflater)
+        dialog.setContentView(binding.root)
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
+        dialog.show()
+        binding.btnOk.setOnClickListener {
+            if(binding.UndeleteItem.isChecked){
+                trash.let {
+                    val note = Note(
+                        title = it.title,
+                        content = it.content,
+                        createDate = it.createDate,
+                        editedDate = it.editedDate,
+                    )
+                    note.label = trash.label
+                    note.color =trash.color
+                    note.spannableString = trash.spannableString
+                    note.isBold = trash.isBold
+                    note.isItalic = trash.isItalic
+                    note.isUnderline = trash.isUnderline
+                    note.isStrikethrough = trash.isStrikethrough
+                    note.textSize = trash.textSize
+                    note.foregroundColorText = trash.foregroundColorText
+                    note.backgroundColorText = trash.backgroundColorText
+                    noteDatabase.noteDao().insertNote(note)
+                }
+                noteDatabase.noteDao().deleteTrash(trash)
+            }
+            if(binding.DeleteItem.isChecked){
+                noteDatabase.noteDao().deleteTrash(trash)
+            }
+            dialog.cancel()
+        }
+        binding.btnCancel.setOnClickListener {
+            dialog.cancel()
+        }
+    }
+
     private fun getCategoriesData() {
         noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner){
             if(it.isNotEmpty()){
