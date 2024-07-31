@@ -36,6 +36,7 @@ import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.note.NoteFragment
 import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.note.options.ImportNote
+import com.example.myapplication.setting.SettingFragment
 import com.google.android.material.navigation.NavigationView
 
 class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
@@ -149,29 +150,33 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             }
         }
     }
+    private fun restoreTrash(trash : Trash){
+        trash.let {
+            val note = Note(
+                title = it.title,
+                content = it.content,
+                createDate = it.createDate,
+                editedDate = it.editedDate,
+            )
+            note.label = trash.label
+            note.color =trash.color
+            note.spannableString = trash.spannableString
+            note.isBold = trash.isBold
+            note.isItalic = trash.isItalic
+            note.isUnderline = trash.isUnderline
+            note.isStrikethrough = trash.isStrikethrough
+            note.textSize = trash.textSize
+            note.foregroundColorText = trash.foregroundColorText
+            note.backgroundColorText = trash.backgroundColorText
+            noteDatabase.noteDao().insertNote(note)
+        }
+        noteDatabase.noteDao().deleteTrash(trash)
+    }
+
 
     private fun restoreAllTrash() {
         for(trash in listTrash){
-            trash.let {
-                val note = Note(
-                    title = it.title,
-                    content = it.content,
-                    createDate = it.createDate,
-                    editedDate = it.editedDate,
-                )
-                note.label = trash.label
-                note.color =trash.color
-                note.spannableString = trash.spannableString
-                note.isBold = trash.isBold
-                note.isItalic = trash.isItalic
-                note.isUnderline = trash.isUnderline
-                note.isStrikethrough = trash.isStrikethrough
-                note.textSize = trash.textSize
-                note.foregroundColorText = trash.foregroundColorText
-                note.backgroundColorText = trash.backgroundColorText
-                noteDatabase.noteDao().insertNote(note)
-            }
-            noteDatabase.noteDao().deleteTrash(trash)
+           restoreTrash(trash)
         }
         Toast.makeText(requireContext(), "Restore ${listTrash.size} notes", Toast.LENGTH_SHORT)
             .show()
@@ -185,29 +190,9 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             .setMessage("Do you want to restore this selected notes ?")
             .setPositiveButton("Yes") { dialogInterface, _ ->
                 for (trash in listTrashSelected) {
-                    trash.let {
-                        val note = Note(
-                            title = it.title,
-                            content = it.content,
-                            createDate = it.createDate,
-                            editedDate = it.editedDate,
-                        )
-                        note.label = trash.label
-                        note.color =trash.color
-                        note.spannableString = trash.spannableString
-                        note.isBold = trash.isBold
-                        note.isItalic = trash.isItalic
-                        note.isUnderline = trash.isUnderline
-                        note.isStrikethrough = trash.isStrikethrough
-                        note.textSize = trash.textSize
-                        note.foregroundColorText = trash.foregroundColorText
-                        note.backgroundColorText = trash.backgroundColorText
-                        noteDatabase.noteDao().insertNote(note)
-                    }
-                    noteDatabase.noteDao().deleteTrash(trash)
+                    restoreTrash(trash)
                 }
-                Toast.makeText(requireContext(), "Restore ${listTrashSelected.size} notes", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(requireContext(), "Restore ${listTrashSelected.size} notes", Toast.LENGTH_SHORT).show()
                 listTrashSelected.clear()
                 viewBinding.layoutSelectedNote.visibility = View.GONE
                 viewBinding.layoutMainToolBar.visibility = View.VISIBLE
@@ -261,26 +246,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         dialog.show()
         binding.btnOk.setOnClickListener {
             if(binding.UndeleteItem.isChecked){
-                trash.let {
-                    val note = Note(
-                        title = it.title,
-                        content = it.content,
-                        createDate = it.createDate,
-                        editedDate = it.editedDate,
-                    )
-                    note.label = trash.label
-                    note.color =trash.color
-                    note.spannableString = trash.spannableString
-                    note.isBold = trash.isBold
-                    note.isItalic = trash.isItalic
-                    note.isUnderline = trash.isUnderline
-                    note.isStrikethrough = trash.isStrikethrough
-                    note.textSize = trash.textSize
-                    note.foregroundColorText = trash.foregroundColorText
-                    note.backgroundColorText = trash.backgroundColorText
-                    noteDatabase.noteDao().insertNote(note)
-                }
-                noteDatabase.noteDao().deleteTrash(trash)
+                restoreTrash(trash)
             }
             if(binding.DeleteItem.isChecked){
                 noteDatabase.noteDao().deleteTrash(trash)
@@ -318,9 +284,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         if (categoriesGroupItem != null) {
             val categoriesGroup = categoriesGroupItem.subMenu
 
-            // Xóa các phần tử động trước đó, giữ lại phần tử "Edit categories"
             categoriesGroup?.let {
-                val editCategoryItem = it.findItem(R.id.categories)
                 it.clear()
                 //Add Edit Categories Item Menu
                 it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
@@ -329,15 +293,13 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                 it.add(Menu.NONE, 2311, Menu.NONE, "Uncategorized")
                     .setIcon(R.drawable.dont_tag)
 
-                // Thêm các phần tử mới từ danh sách với ID duy nhất
                 listCategories.forEachIndexed { index, category ->
-                    val itemId = Menu.FIRST + index   // Sử dụng ID duy nhất cho mỗi phần tử, tránh trùng với R.id.categories
+                    val itemId = Menu.FIRST + index
                     it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
                         ?.setIcon(R.drawable.tag)
                 }
             }
         } else {
-            // Xử lý nếu categoriesGroupItem bị null (có thể ghi log hoặc hiện thông báo lỗi)
             Log.e("CategoriesFragment", "categoriesGroupItem is null")
         }
     }
@@ -352,6 +314,9 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             }
             R.id.delete -> {
 
+            }
+            R.id.setting -> {
+                onChangeToSettingFragment()
             }
             2311 ->{
                 onChangeToNoteFragment("Uncategorized")
@@ -401,6 +366,13 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         val categoriesFragment = CategoriesFragment()
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
         fragmentTrans.replace(R.id.mainLayout, categoriesFragment)
+        fragmentTrans.commit()
+    }
+    private fun onChangeToSettingFragment() {
+        val settingFragment = SettingFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.add(R.id.mainLayout, settingFragment)
+        fragmentTrans.addToBackStack(null)
         fragmentTrans.commit()
     }
 }

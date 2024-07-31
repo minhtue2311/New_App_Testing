@@ -28,6 +28,7 @@ import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.note.NoteFragment
+import com.example.myapplication.setting.SettingFragment
 import com.example.myapplication.trash.TrashFragment
 import com.google.android.material.navigation.NavigationView
 
@@ -87,8 +88,6 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
 
         if (categoriesGroupItem != null) {
             val categoriesGroup = categoriesGroupItem.subMenu
-
-            // Xóa các phần tử động trước đó, giữ lại phần tử "Edit categories"
             categoriesGroup?.let {
                 it.clear()
                 it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
@@ -172,6 +171,9 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
             R.id.editCategories -> {
 
             }
+            R.id.setting -> {
+                onChangeToSettingFragment()
+            }
             R.id.delete -> {
                 onChangeToTrashFragment()
             }
@@ -199,6 +201,14 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
+    }
+
+    private fun onChangeToSettingFragment() {
+        val settingFragment = SettingFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.add(R.id.mainLayout, settingFragment)
+        fragmentTrans.addToBackStack(null)
+        fragmentTrans.commit()
     }
 
     private fun onChangeToTrashFragment() {

@@ -25,4 +25,14 @@ class NoteStatusPreferences(private val context: Context) {
         val sharedPreferences : SharedPreferences? = context.getSharedPreferences(myPreferences, Context.MODE_PRIVATE)
         return sharedPreferences!!.getBoolean("statusFormattingBar", false)
     }
+    fun putStatusTrashValues(status : Boolean){
+        val sharedPreferences : SharedPreferences? = context.getSharedPreferences(myPreferences, Context.MODE_PRIVATE)
+        val editor : SharedPreferences.Editor = sharedPreferences!!.edit()
+        editor.putBoolean("statusTrash", status)
+        editor.apply()
+    }
+    fun getStatusTrashValues() : Boolean{
+        val sharedPreferences : SharedPreferences? = context.getSharedPreferences(myPreferences, Context.MODE_PRIVATE)
+        return sharedPreferences!!.getBoolean("statusTrash", false)
+    }
 }

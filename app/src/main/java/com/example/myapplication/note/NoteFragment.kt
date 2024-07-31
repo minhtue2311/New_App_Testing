@@ -39,6 +39,7 @@ import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.note.noteViewModel.NoteViewModel
 import com.example.myapplication.note.options.ImportNote
 import com.example.myapplication.preferences.NoteStatusPreferences
+import com.example.myapplication.setting.SettingFragment
 import com.example.myapplication.trash.TrashFragment
 import com.google.android.material.navigation.NavigationView
 
@@ -142,26 +143,28 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             .setPositiveButton("Yes") { dialogInterface, _ ->
                 for (note in listNoteSelected) {
                     noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(note.idNote!!)
-                   note.let {
-                       val trashModel = Trash(
-                           idNoteTrash = null,
-                           title = it.title,
-                           content = it.content,
-                           createDate = it.createDate,
-                           editedDate = it.editedDate,
-                           color = it.color,
-                           label = it.label,
-                           spannableString = it.spannableString,
-                           isBold = it.isBold,
-                           isItalic = it.isItalic,
-                           isUnderline = it.isUnderline,
-                           isStrikethrough = it.isStrikethrough,
-                           textSize = it.textSize,
-                           foregroundColorText = it.foregroundColorText,
-                           backgroundColorText = it.foregroundColorText,
-                       )
-                       noteDatabase.noteDao().moveNoteToTrash(trashModel)
-                   }
+                    if(preferences.getStatusTrashValues()){
+                        note.let {
+                            val trashModel = Trash(
+                                idNoteTrash = null,
+                                title = it.title,
+                                content = it.content,
+                                createDate = it.createDate,
+                                editedDate = it.editedDate,
+                                color = it.color,
+                                label = it.label,
+                                spannableString = it.spannableString,
+                                isBold = it.isBold,
+                                isItalic = it.isItalic,
+                                isUnderline = it.isUnderline,
+                                isStrikethrough = it.isStrikethrough,
+                                textSize = it.textSize,
+                                foregroundColorText = it.foregroundColorText,
+                                backgroundColorText = it.foregroundColorText,
+                            )
+                            noteDatabase.noteDao().moveNoteToTrash(trashModel)
+                        }
+                    }
                     noteDatabase.noteDao().delete(note)
                 }
                 Toast.makeText(requireContext(), "Delete ${listNoteSelected.size} notes", Toast.LENGTH_SHORT)
@@ -208,13 +211,13 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
         startActivityForResult(intent, 2)
     }
 
-    private fun openDocumentTree() {   //Cho phep chon thu muc muon luu tai lieu
+    private fun openDocumentTree() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         startActivityForResult(intent, 1 )
     }
 
 
-    @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
@@ -477,6 +480,9 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             R.id.delete ->{
                 onChangeToTrashFragment()
             }
+            R.id.setting ->{
+                onChangeToSettingFragment()
+            }
             2311 -> {
                 type = "Uncategorized"
                 viewBinding.contentTxt.visibility = View.VISIBLE
@@ -510,6 +516,14 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
         return true
     }
 
+    private fun onChangeToSettingFragment() {
+        val settingFragment = SettingFragment()
+        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
+        fragmentTrans.add(R.id.mainLayout, settingFragment)
+        fragmentTrans.addToBackStack(null)
+        fragmentTrans.commit()
+    }
+
     private fun onChangeToTrashFragment() {
         val trashFragment = TrashFragment()
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
@@ -529,10 +543,7 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
 
         if (categoriesGroupItem != null) {
             val categoriesGroup = categoriesGroupItem.subMenu
-
-            // Xóa các phần tử động trước đó, giữ lại phần tử "Edit categories"
             categoriesGroup?.let {
-                val editCategoryItem = it.findItem(R.id.categories)
                 it.clear()
                 //Add Edit Categories Item Menu
                 it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
@@ -540,16 +551,13 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
                 //Add Uncategorized Item Menu
                 it.add(Menu.NONE, 2311, Menu.NONE, "Uncategorized")
                     .setIcon(R.drawable.dont_tag)
-
-                // Thêm các phần tử mới từ danh sách với ID duy nhất
                 listCategories.forEachIndexed { index, category ->
-                    val itemId = Menu.FIRST + index   // Sử dụng ID duy nhất cho mỗi phần tử, tránh trùng với R.id.categories
+                    val itemId = Menu.FIRST + index
                     it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
                         ?.setIcon(R.drawable.tag)
                 }
             }
         } else {
-            // Xử lý nếu categoriesGroupItem bị null (có thể ghi log hoặc hiện thông báo lỗi)
             Log.e("CategoriesFragment", "categoriesGroupItem is null")
         }
     }

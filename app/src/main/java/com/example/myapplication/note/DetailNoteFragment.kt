@@ -136,10 +136,8 @@ class DetailNoteFragment : Fragment() {
             val keypadHeight = screenHeight - r.bottom
 
             if (keypadHeight > screenHeight * 0.15) {
-                // Bàn phím đã xuất hiện
                 viewBinding.editTextContent.setPadding(0, 0, 0, 1000)
             } else {
-                // Bàn phím đã ẩn
                 viewBinding.editTextContent.setPadding(0, 0, 0, 1600)
             }
         }
@@ -170,9 +168,6 @@ class DetailNoteFragment : Fragment() {
                     lastStartSelection = startSelection
                     lastEndSelection = endSelection
                 }
-
-
-                // Tiếp tục kiểm tra sau 100ms
                 handler.postDelayed(this, 100)
             }
         }
@@ -185,8 +180,6 @@ class DetailNoteFragment : Fragment() {
                 lastEndSelection = -1
             }
         }
-
-
         viewBinding.editTextContent.setOnClickListener {
             if(readMode){
                 clickCount++
@@ -370,9 +363,7 @@ class DetailNoteFragment : Fragment() {
         var colorForSelectedSpan = ""
         val adapter = AdapterForPickColor(colors, object : InterfaceOnClickListener{
             override fun onClickItemNoteListener(note: Note) {
-
             }
-
             override fun onClickColorItem(color: String) {
                 binding.txtSelectColor.setBackgroundColor(Color.parseColor(color))
                 if(lastStartSelection == lastEndSelection){
@@ -382,14 +373,10 @@ class DetailNoteFragment : Fragment() {
                     colorForSelectedSpan = color
                 }
             }
-
             override fun onSelectedNote(listNoteSelectedResult: ArrayList<Note>) {
-
             }
             override fun onClickCategoriesItem(categories: Categories) {
-
             }
-
         })
         binding.recyclerViewPickColor.adapter = adapter
         binding.textViewOpacity.text = resources.getString(R.string.opacity) + "(${binding.seekBarTextSize.progress})"
@@ -403,7 +390,6 @@ class DetailNoteFragment : Fragment() {
                 colorString.set(getColorStringWithAlpha(Color.parseColor(colorString.get()), progress))
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
         binding.btnRemoveColor.setOnClickListener {
@@ -463,7 +449,7 @@ class DetailNoteFragment : Fragment() {
         return String.format("#%08X", colorWithAlpha) // Returns #AARRGGBB
     }
     private fun onClickButtonEvent(button : ImageButton, state : KMutableProperty0<Boolean>){
-       //KMutableProperty0 <Boolean> is a bool variable that can be changed inside another functions
+       //KMutableProperty0 <Boolean> is a bool variable that can be changed inside another function
         button.setOnClickListener {
             Log.d("Start and End", "$lastStartSelection $lastEndSelection")
             val editable = viewBinding.editTextContent.text
@@ -648,28 +634,29 @@ class DetailNoteFragment : Fragment() {
             if(isChangedTextSize){
                 startIndex = viewBinding.editTextContent.text.length
             }
-            setUpBackgroundForItemInFormattingBar(viewBinding.fontSizeButton, isChangedTextSize)
-
             //Foreground Color Text
-            isChangedColorText = it.foregroundColorText != ""
-            colorText = it.foregroundColorText
-            if(isChangedColorText){
-                startIndex = viewBinding.editTextContent.text.length
-                viewBinding.colorTextButton.setBackgroundColor(Color.parseColor(colorText))
-            }else{
-                viewBinding.colorTextButton.setBackgroundColor(Color.parseColor(colorInstant))
-            }
-
+            bindColor(::isChangedColorText, it, viewBinding.colorTextButton, ::colorText)
             //Background Color Text
-            isChangedBackgroundText = it.backgroundColorText != ""
-            backgroundColor = it.backgroundColorText
-            if(isChangedBackgroundText){
-                startIndex = viewBinding.editTextContent.text.length
-                viewBinding.colorBackgroundButton.setBackgroundColor(Color.parseColor(backgroundColor))
-            }else{
-                viewBinding.colorBackgroundButton.setBackgroundColor(Color.parseColor(colorInstant))
+            bindColor(::isChangedBackgroundText, it, viewBinding.colorBackgroundButton, ::backgroundColor)
+        }
+    }
+    private fun bindColor(stateChangeColor : KMutableProperty0<Boolean>, note : Note, view : View, color : KMutableProperty0<String>){
+        when(view){
+            viewBinding.colorTextButton ->{
+                val bool = note.foregroundColorText != ""
+                color.set(note.foregroundColorText)
+                stateChangeColor.set(bool)}
+            viewBinding.colorBackgroundButton -> {
+                val bool = note.backgroundColorText != ""
+                color.set(note.backgroundColorText)
+                stateChangeColor.set(bool)
             }
         }
+        if(stateChangeColor.get()){
+            startIndex = viewBinding.editTextContent.text.length
+            view.setBackgroundColor(Color.parseColor(color.get()))
+        }
+        else view.setBackgroundColor(Color.parseColor(colorInstant))
     }
     private fun setupFormattingButtons(note: Note) {
         val formattingStates = listOf(
@@ -717,7 +704,6 @@ class DetailNoteFragment : Fragment() {
                     SpannableStringBuilder.valueOf(s)
                 }
             }
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 // Update the undo button color if there is a change
                 if (s.toString().trim() != rootValue) {
@@ -725,7 +711,6 @@ class DetailNoteFragment : Fragment() {
                     viewBinding.btnUndo.isEnabled = true
                 }
             }
-
             override fun afterTextChanged(s: Editable?) {
                 if (s != null) {
                     // Add the previous text to the stack only if the current text is different than the older
@@ -966,7 +951,7 @@ class DetailNoteFragment : Fragment() {
     private fun openIntentForShareOutSide() {
         val sendIntent = Intent()
         sendIntent.setAction(Intent.ACTION_SEND)
-        sendIntent.putExtra(Intent.EXTRA_TEXT, note?.content)
+        sendIntent.putExtra(Intent.EXTRA_TEXT, viewBinding.editTextContent.text.toString())
         sendIntent.setType("text/plain")
         val shareIntent = Intent.createChooser(sendIntent, "Share with")
         startActivity(shareIntent)
@@ -986,7 +971,6 @@ class DetailNoteFragment : Fragment() {
             }
         })
     }
-
     private fun showDialogCategory() {
         val dialog = Dialog(requireContext())
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -1065,27 +1049,29 @@ class DetailNoteFragment : Fragment() {
             .setTitle("Confirm")
             .setMessage("Do you want to remove ${note?.label}?")
             .setPositiveButton("Yes") { dialogInterface, _ ->
-                note?.let {
-                    noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(note?.idNote!!)
-                    note?.let {
-                        val trashModel = Trash(
-                            idNoteTrash = null,
-                            title = it.title,
-                            content = it.content,
-                            createDate = it.createDate,
-                            editedDate = it.editedDate,
-                            color = it.color,
-                            label = it.label,
-                            spannableString = it.spannableString,
-                            isBold = it.isBold,
-                            isItalic = it.isItalic,
-                            isUnderline = it.isUnderline,
-                            isStrikethrough = it.isStrikethrough,
-                            textSize = it.textSize,
-                            foregroundColorText = it.foregroundColorText,
-                            backgroundColorText = it.foregroundColorText,
-                        )
-                        noteDatabase.noteDao().moveNoteToTrash(trashModel)
+                note?.let { it ->
+                    noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(it.idNote!!)
+                    if(preferences.getStatusTrashValues()){
+                        note?.let {
+                            val trashModel = Trash(
+                                idNoteTrash = null,
+                                title = it.title,
+                                content = it.content,
+                                createDate = it.createDate,
+                                editedDate = it.editedDate,
+                                color = it.color,
+                                label = it.label,
+                                spannableString = it.spannableString,
+                                isBold = it.isBold,
+                                isItalic = it.isItalic,
+                                isUnderline = it.isUnderline,
+                                isStrikethrough = it.isStrikethrough,
+                                textSize = it.textSize,
+                                foregroundColorText = it.foregroundColorText,
+                                backgroundColorText = it.foregroundColorText,
+                            )
+                            noteDatabase.noteDao().moveNoteToTrash(trashModel)
+                        }
                     }
                     noteDatabase.noteDao().delete(it)
                 }
@@ -1133,11 +1119,11 @@ class DetailNoteFragment : Fragment() {
         }
         return result
     }
-    private fun openDocumentTree() {   //Cho phep chon thu muc muon luu tai lieu
+    private fun openDocumentTree() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         startActivityForResult(intent, 1 )
     }
-    @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
@@ -1189,7 +1175,6 @@ class DetailNoteFragment : Fragment() {
             override fun onClickCategoriesItem(categories: Categories) {
 
             }
-
         })
         binding.recyclerViewPickColor.adapter = adapter
 
@@ -1225,6 +1210,9 @@ class DetailNoteFragment : Fragment() {
                 setUpBackgroundForItemInFormattingBar(viewBinding.italicButton, isItalicState)
                 setUpBackgroundForItemInFormattingBar(viewBinding.underlineButton, isUnderlineState)
                 setUpBackgroundForItemInFormattingBar(viewBinding.strikethroughButton, isStrikethroughState)
+                setUpBackgroundForItemInFormattingBar(viewBinding.fontSizeButton, isChangedTextSize)
+                if(colorText == "") viewBinding.colorTextButton.setBackgroundColor(Color.parseColor(colorInstant))
+                if(backgroundColor == "") viewBinding.colorBackgroundButton.setBackgroundColor(Color.parseColor(backgroundColor))
             dialog.cancel()
         }
         binding.btnCancel.setOnClickListener {

@@ -45,11 +45,6 @@ class FormattingBarFunctions {
         val spannable = editText.text as Spannable
         spannable.setSpan(BackgroundColorSpan(color), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
-//    fun applyTextSize(editText: EditText, start: Int, end: Int, size: Float) {
-//        val spannable = editText.text as Spannable
-//        spannable.setSpan(RelativeSizeSpan(size), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-//        editText.setSelection(end)
-//    }
      fun highlightMatches(searchText: String, editText: EditText) {
          val content: String = editText.text.toString()
          val spannableString = SpannableString(content)
@@ -69,7 +64,6 @@ class FormattingBarFunctions {
                  ) // search for next character.
              }
          }
-
          editText.setText(spannableString)
      }
 }

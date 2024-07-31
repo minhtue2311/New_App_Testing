@@ -23,18 +23,13 @@ class AdapterSelectCategory(
     override fun onBindViewHolder(holder: ViewHolderSelectCategory, position: Int) {
         val model = listCategories[position]
         holder.bindData(model)
-
-        // Kiểm tra xem model này có thuộc listCategoriesSelected không
         holder.getViewBinding().checkBoxSelected.isChecked = listCategoriesSelected.contains(model)
-
         holder.getViewBinding().checkBoxSelected.setOnClickListener {
             if (holder.getViewBinding().checkBoxSelected.isChecked) {
-                // Nếu checkbox được chọn, thêm model vào listCategoriesSelected
                 if (!listCategoriesSelected.contains(model)) {
                     listCategoriesSelected.add(model)
                 }
             } else {
-                // Nếu checkbox bị bỏ chọn, loại bỏ model khỏi listCategoriesSelected
                 listCategoriesSelected.remove(model)
             }
         }
