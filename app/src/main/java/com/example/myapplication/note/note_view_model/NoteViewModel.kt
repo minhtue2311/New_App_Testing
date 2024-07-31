@@ -1,4 +1,4 @@
-package com.example.myapplication.note.noteViewModel
+package com.example.myapplication.note.note_view_model
 
 import android.content.Context
 import androidx.lifecycle.LiveData
@@ -13,9 +13,9 @@ class NoteViewModel() : ViewModel() {
     private lateinit var liveDataNote: LiveData<List<Note>>
     private val mediatorNotes = MediatorLiveData<List<Note>>()
     private var currentSource: LiveData<*>? = null // Variable to hold current source
-
     // Public LiveData for observing notes
     val notes: LiveData<List<Note>> get() = mediatorNotes
+
 
     fun getLiveDataNote(context: Context) {
         noteRepository = NoteRepository()
@@ -39,6 +39,14 @@ class NoteViewModel() : ViewModel() {
         currentSource = uncategorizedNotes
         mediatorNotes.addSource(uncategorizedNotes) { notesList ->
             mediatorNotes.value = notesList
+        }
+    }
+    fun getTrashNote(context : Context){
+        noteRepository = NoteRepository()
+        val noteTrash = noteRepository.getAllTrash(context)
+        currentSource = noteTrash
+        mediatorNotes.addSource(noteTrash) { noteList ->
+            mediatorNotes.value = noteList
         }
     }
 

@@ -1,4 +1,4 @@
-package com.example.myapplication.categories.categoriesModel
+package com.example.myapplication.categories.categories_model
 
 import android.content.Context
 import androidx.lifecycle.LiveData

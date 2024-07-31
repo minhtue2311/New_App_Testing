@@ -22,10 +22,10 @@ interface NoteDAO {
     @Update
     fun updateNote(note: Note)
 
-    @Query("SELECT * FROM Note")
+    @Query("SELECT * FROM Note Where isDelete = 0")
     fun getAllNote() : LiveData<List<Note>>
 
-    @Query("SELECT * FROM Note WHERE idNote NOT IN (SELECT DISTINCT idNote FROM NoteCategoryRef)")
+    @Query("SELECT * FROM Note WHERE idNote NOT IN (SELECT DISTINCT idNote FROM NoteCategoryRef) and isDelete = 0")
     fun getNotesWithoutCategories(): LiveData<List<Note>>
 
     @Query("DELETE FROM NoteCategoryRef WHERE idNote = :noteId")
@@ -52,16 +52,8 @@ interface NoteDAO {
     @Query("SELECT COUNT(*) FROM NoteCategoryRef WHERE idNote = :noteId AND idCategory = :categoryId")
     fun checkNoteCategoryRefExists(noteId: Int, categoryId: Int): Int
 
-    @Insert
-    fun moveNoteToTrash(trash: Trash)
-
-
-    @Query("SELECT * FROM Trash")
-    fun getAllNoteFromTrash() : LiveData<List<Trash>>
-
-    @Delete
-    fun deleteTrash(trash: Trash)
-
+    @Query("SELECT * FROM Note WHERE isDelete = 1")
+    fun getAllNoteFromTrash() : LiveData<List<Note>>
 }
 
 @Dao

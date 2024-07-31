@@ -235,7 +235,9 @@ class ViewHolderNote(private var viewBinding: CustomItemRecyclerViewBinding) :
     fun bindData(note: Note, context: Context, listNoteSelected: ArrayList<Note>) {
         viewBinding.title.text = note.label
         viewBinding.dayEdited.text = context.getString(R.string.last_edited) + note.editedDate
-        viewBinding.categories.text = handleListCategories(note.listCategories)
+        if(!note.isDelete){
+            viewBinding.categories.text = handleListCategories(note.listCategories)
+        }
         if (listNoteSelected.contains(note)) {
             if (note.color != "") {
                 viewBinding.linearLayoutItem.background = handleDrawableColor(

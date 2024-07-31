@@ -9,7 +9,6 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -23,35 +22,34 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
-import com.example.myapplication.adapter.AdapterTrash
+import com.example.myapplication.adapter.AdapterRecyclerViewNote
 import com.example.myapplication.categories.CategoriesFragment
-import com.example.myapplication.databinding.CustomLayoutDialogSortBinding
 import com.example.myapplication.databinding.LayoutActionItemTrashBinding
 import com.example.myapplication.databinding.LayoutTrashFragmentBinding
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
-import com.example.myapplication.model.Trash
-import com.example.myapplication.model.interface_model.InterfaceCompleteListener
+import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.note.NoteFragment
+import com.example.myapplication.note.note_view_model.NoteViewModel
 import com.example.myapplication.note.options.ExportNote
-import com.example.myapplication.note.options.ImportNote
 import com.example.myapplication.setting.SettingFragment
 import com.google.android.material.navigation.NavigationView
 
 class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
-    private lateinit var viewBinding : LayoutTrashFragmentBinding
-    private lateinit var listCategories: ArrayList<Categories>
+    private lateinit var viewBinding: LayoutTrashFragmentBinding
+    private var listCategories: ArrayList<Categories> = ArrayList()
     private lateinit var noteDatabase: NoteDatabase
-    private lateinit var viewModel : TrashViewModel
-    private lateinit var listTrash : ArrayList<Trash>
-    private lateinit var adapter : AdapterTrash
-    private var listTrashSelected : ArrayList<Trash> = ArrayList()
+    private lateinit var viewModel: NoteViewModel
+    private lateinit var listTrash: ArrayList<Note>
+    private lateinit var adapter: AdapterRecyclerViewNote
+    private var listTrashSelected: ArrayList<Note> = ArrayList()
     override fun onCreate(savedInstanceState: Bundle?) {
         noteDatabase = NoteDatabase.getInstance(requireContext())
-        viewModel = ViewModelProvider(this)[TrashViewModel::class.java]
+        viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
         super.onCreate(savedInstanceState)
     }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -62,35 +60,32 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             viewBinding.drawerLayout.openDrawer(viewBinding.navView)
         }
         viewBinding.navView.setNavigationItemSelectedListener(this)
-        getCategoriesData()
-        setUpRecyclerView()
-        getTrashData()
         viewBinding.checkBox.setOnClickListener {
-            if(viewBinding.checkBox.isChecked){
+            if (viewBinding.checkBox.isChecked) {
                 adapter.onAllSelected()
-            }else{
+            } else {
                 adapter.onAllUnSelected()
             }
         }
-        return viewBinding.root
-    }
-
-    override fun onResume() {
         viewBinding.bin.setOnClickListener {
             showDialogConfirmRestore()
         }
         viewBinding.checkBox.setOnClickListener {
-            if(viewBinding.checkBox.isChecked){
+            if (viewBinding.checkBox.isChecked) {
                 adapter.onAllSelected()
-            }else{
+            } else {
                 adapter.onAllUnSelected()
             }
         }
         viewBinding.optionButton.setOnClickListener { view ->
             showPopupMenu(view)
         }
-        super.onResume()
+        getCategoriesData()
+        setUpRecyclerView()
+        getTrashData()
+        return viewBinding.root
     }
+
 
     private fun showPopupMenu(view: View?) {
         val popupMenu = PopupMenu(requireContext(), view)
@@ -101,15 +96,18 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         }
         popupMenu.show()
     }
+
     private fun handleMenuItemClick(menuItem: MenuItem) {
         when (menuItem.itemId) {
             R.id.undeleteAll -> {
                 restoreAllTrash()
             }
+
             R.id.export_trash -> {
                 openDocumentTree()
             }
-            R.id.clean ->{
+
+            R.id.clean -> {
                 cleanAllTrash()
             }
         }
@@ -121,16 +119,21 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
 
     private fun showDialogConfirmClean() {
         val dialog = AlertDialog.Builder(context)
-            .setTitle("Confirm")
-            .setMessage("All trashed notes will be deleted permanently. Are you sure that you want to delete all of the trashed note ?")
-            .setPositiveButton("Yes") { dialogInterface, _ ->
-               for(trash in listTrash){
-                   noteDatabase.noteDao().deleteTrash(trash)
-               }
-               Toast.makeText(requireContext(),"Delete Successfully",Toast.LENGTH_SHORT).show()
+            .setTitle(getString(R.string.confirm))
+            .setMessage(getString(R.string.title_confirm_remove_trash))
+            .setPositiveButton(getString(R.string.Yes)) { dialogInterface, _ ->
+                for (trash in listTrash) {
+                    noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(trash.idNote!!)
+                    noteDatabase.noteDao().delete(trash)
+                }
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.delete_successfully),
+                    Toast.LENGTH_SHORT
+                ).show()
                 dialogInterface.cancel()
             }
-            .setNegativeButton("No") { dialogInterface, _ ->
+            .setNegativeButton(getString(R.string.No)) { dialogInterface, _ ->
                 dialogInterface.cancel()
             }
         dialog.show()
@@ -138,45 +141,34 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
 
     private fun openDocumentTree() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        startActivityForResult(intent, 1 )
+        startActivityForResult(intent, 1)
     }
+
     @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             val uri: Uri? = data?.data
             if (uri != null) {
-                ExportNote(requireContext(), requireActivity()).saveListNoteInTrashToDocument(uri, listTrash)
+                ExportNote(requireContext(), requireActivity()).saveListNoteToDocument(
+                    uri,
+                    listTrash
+                )
             }
         }
     }
-    private fun restoreTrash(trash : Trash){
-        trash.let {
-            val note = Note(
-                title = it.title,
-                content = it.content,
-                createDate = it.createDate,
-                editedDate = it.editedDate,
-            )
-            note.label = trash.label
-            note.color =trash.color
-            note.spannableString = trash.spannableString
-            note.isBold = trash.isBold
-            note.isItalic = trash.isItalic
-            note.isUnderline = trash.isUnderline
-            note.isStrikethrough = trash.isStrikethrough
-            note.textSize = trash.textSize
-            note.foregroundColorText = trash.foregroundColorText
-            note.backgroundColorText = trash.backgroundColorText
-            noteDatabase.noteDao().insertNote(note)
-        }
-        noteDatabase.noteDao().deleteTrash(trash)
+
+    private fun restoreTrash(trash: Note) {
+        trash.isDelete = false
+        noteDatabase.noteDao().updateNote(trash)
+        Toast.makeText(requireContext(), getString(R.string.restore_one_note), Toast.LENGTH_SHORT)
+            .show()
     }
 
 
     private fun restoreAllTrash() {
-        for(trash in listTrash){
-           restoreTrash(trash)
+        for (trash in listTrash) {
+            restoreTrash(trash)
         }
         Toast.makeText(requireContext(), "Restore ${listTrash.size} notes", Toast.LENGTH_SHORT)
             .show()
@@ -186,13 +178,17 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
     @SuppressLint("NotifyDataSetChanged")
     private fun showDialogConfirmRestore() {
         val dialog = AlertDialog.Builder(context)
-            .setTitle("Confirm")
-            .setMessage("Do you want to restore this selected notes ?")
-            .setPositiveButton("Yes") { dialogInterface, _ ->
+            .setTitle(getString(R.string.confirm))
+            .setMessage(getString(R.string.title_confirm_restore_note))
+            .setPositiveButton(getString(R.string.Yes)) { dialogInterface, _ ->
                 for (trash in listTrashSelected) {
                     restoreTrash(trash)
                 }
-                Toast.makeText(requireContext(), "Restore ${listTrashSelected.size} notes", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Restore ${listTrashSelected.size} notes",
+                    Toast.LENGTH_SHORT
+                ).show()
                 listTrashSelected.clear()
                 viewBinding.layoutSelectedNote.visibility = View.GONE
                 viewBinding.layoutMainToolBar.visibility = View.VISIBLE
@@ -200,7 +196,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                 adapter.clearListSelectedNote()
                 dialogInterface.cancel()
             }
-            .setNegativeButton("No") { dialogInterface, _ ->
+            .setNegativeButton(getString(R.string.No)) { dialogInterface, _ ->
                 dialogInterface.cancel()
             }
         dialog.show()
@@ -210,13 +206,17 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         viewBinding.recyclerViewTrash.setHasFixedSize(false)
         listTrash = ArrayList()
         val linearLayout = LinearLayoutManager(requireContext())
-        adapter = AdapterTrash(listTrash, object : AdapterTrash.OnClickTrashListener{
-            override fun onClickTrashListener(trash: Trash) {
-                openDialogForItemTrash(trash)
+        adapter = AdapterRecyclerViewNote(listTrash, object : InterfaceOnClickListener {
+            override fun onClickItemNoteListener(note: Note) {
+                openDialogForItemTrash(note)
             }
 
-            override fun onLongClickTrashListener(listTrash: ArrayList<Trash>) {
-                if(listTrash.size == 0){
+            override fun onClickColorItem(color: String) {
+
+            }
+
+            override fun onSelectedNote(listNoteSelectedResult: ArrayList<Note>) {
+                if(listNoteSelectedResult.size == 0){
                     viewBinding.layoutMainToolBar.visibility = View.VISIBLE
                     viewBinding.layoutSelectedNote.visibility = View.GONE
                 }else{
@@ -224,16 +224,19 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                     viewBinding.layoutMainToolBar.visibility = View.GONE
                     viewBinding.numberSelected.text = listTrash.size.toString()
                     listTrashSelected.clear()
-                    listTrashSelected.addAll(listTrash)
+                    listTrashSelected.addAll(listNoteSelectedResult)
                 }
             }
 
+            override fun onClickCategoriesItem(categories: Categories) {
+
+            }
         }, requireContext())
         viewBinding.recyclerViewTrash.adapter = adapter
         viewBinding.recyclerViewTrash.layoutManager = linearLayout
     }
 
-    private fun openDialogForItemTrash(trash: Trash) {
+    private fun openDialogForItemTrash(trash: Note) {
         val dialog = Dialog(requireContext())
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         val binding = LayoutActionItemTrashBinding.inflate(dialog.layoutInflater)
@@ -245,11 +248,12 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.WHITE))
         dialog.show()
         binding.btnOk.setOnClickListener {
-            if(binding.UndeleteItem.isChecked){
+            if (binding.UndeleteItem.isChecked) {
                 restoreTrash(trash)
             }
-            if(binding.DeleteItem.isChecked){
-                noteDatabase.noteDao().deleteTrash(trash)
+            if (binding.DeleteItem.isChecked) {
+                noteDatabase.noteDao().deleteNoteCategoriesRefByNoteId(trash.idNote!!)
+                noteDatabase.noteDao().delete(trash)
             }
             dialog.cancel()
         }
@@ -259,21 +263,21 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
     }
 
     private fun getCategoriesData() {
-        noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner){
-            if(it.isNotEmpty()){
+        noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner) {
+            if (it.isNotEmpty()) {
                 listCategories.addAll(it)
                 loadCategoriesToMenu(it)
             }
         }
     }
+
     @SuppressLint("NotifyDataSetChanged")
-    private fun getTrashData(){
-        viewModel.getLiveDataTrash(requireContext()).observe(viewLifecycleOwner){
-            if(it != null){
-                listTrash.clear()
-                listTrash.addAll(it)
-                adapter.notifyDataSetChanged()
-            }
+    private fun getTrashData() {
+        viewModel.getTrashNote(requireContext())
+        viewModel.notes.observe(viewLifecycleOwner) { result ->
+            listTrash.clear()
+            listTrash.addAll(result)
+            adapter.notifyDataSetChanged()
         }
     }
 
@@ -287,10 +291,10 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             categoriesGroup?.let {
                 it.clear()
                 //Add Edit Categories Item Menu
-                it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
+                it.add(Menu.NONE, R.id.editCategories, Menu.NONE, getString(R.string.edit_categorized))
                     .setIcon(R.drawable.baseline_playlist_add_24)
                 //Add Uncategorized Item Menu
-                it.add(Menu.NONE, 2311, Menu.NONE, "Uncategorized")
+                it.add(Menu.NONE, 2311, Menu.NONE, getString(R.string.uncategorized))
                     .setIcon(R.drawable.dont_tag)
 
                 listCategories.forEachIndexed { index, category ->
@@ -299,29 +303,32 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                         ?.setIcon(R.drawable.tag)
                 }
             }
-        } else {
-            Log.e("CategoriesFragment", "categoriesGroupItem is null")
         }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when(item.itemId){
+        when (item.itemId) {
             R.id.note -> {
                 onChangeToNoteFragment("All")
             }
+
             R.id.editCategories -> {
                 onChangedToCategoriesFragment()
             }
+
             R.id.delete -> {
 
             }
+
             R.id.setting -> {
                 onChangeToSettingFragment()
             }
-            2311 ->{
+
+            2311 -> {
                 onChangeToNoteFragment("Uncategorized")
             }
-            else ->{
+
+            else -> {
                 val menu = viewBinding.navView.menu
                 val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
                 if (categoriesGroupItem != null) {
@@ -343,7 +350,8 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
     }
-    private fun onChangeToNoteFragmentWithCategories(value : Categories) {
+
+    private fun onChangeToNoteFragmentWithCategories(value: Categories) {
         val noteFragment = NoteFragment()
         val bundle = Bundle()
         bundle.putSerializable("category", value)
@@ -353,7 +361,8 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         fragmentTrans.replace(R.id.mainLayout, noteFragment)
         fragmentTrans.commit()
     }
-    private fun onChangeToNoteFragment(value : String) {
+
+    private fun onChangeToNoteFragment(value: String) {
         val noteFragment = NoteFragment()
         val bundle = Bundle()
         bundle.putString("Type", value)
@@ -362,12 +371,14 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         fragmentTrans.replace(R.id.mainLayout, noteFragment)
         fragmentTrans.commit()
     }
+
     private fun onChangedToCategoriesFragment() {
         val categoriesFragment = CategoriesFragment()
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
         fragmentTrans.replace(R.id.mainLayout, categoriesFragment)
         fragmentTrans.commit()
     }
+
     private fun onChangeToSettingFragment() {
         val settingFragment = SettingFragment()
         val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()

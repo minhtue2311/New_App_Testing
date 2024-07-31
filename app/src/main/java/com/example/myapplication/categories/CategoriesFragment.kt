@@ -19,10 +19,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
 import com.example.myapplication.adapter.AdapterListCategories
-import com.example.myapplication.categories.categoriesModel.CategoriesViewModel
+import com.example.myapplication.categories.categories_model.CategoriesViewModel
 import com.example.myapplication.databinding.LayoutCategoriesBinding
 import com.example.myapplication.databinding.LayoutEditCategoryNameBinding
-import com.example.myapplication.databinding.LayoutShowInfoNoteBinding
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
@@ -33,9 +32,9 @@ import com.example.myapplication.trash.TrashFragment
 import com.google.android.material.navigation.NavigationView
 
 class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener {
-    private lateinit var viewBinding : LayoutCategoriesBinding
+    private lateinit var viewBinding: LayoutCategoriesBinding
     private lateinit var listCategories: ArrayList<Categories>
-    private lateinit var adapter : AdapterListCategories
+    private lateinit var adapter: AdapterListCategories
     private lateinit var viewModel: CategoriesViewModel
     private lateinit var noteDatabase: NoteDatabase
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +42,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         noteDatabase = NoteDatabase.getInstance(requireContext())
         super.onCreate(savedInstanceState)
     }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -54,8 +54,8 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         }
         viewBinding.navView.setNavigationItemSelectedListener(this)
         viewBinding.btnAdd.setOnClickListener {
-            if(viewBinding.editTextNewCategories.text.toString().isNotEmpty()){
-                val categories = Categories(null,viewBinding.editTextNewCategories.text.toString())
+            if (viewBinding.editTextNewCategories.text.toString().isNotEmpty()) {
+                val categories = Categories(null, viewBinding.editTextNewCategories.text.toString())
                 addNewCategories(categories)
             }
         }
@@ -66,7 +66,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
 
     @SuppressLint("NotifyDataSetChanged")
     private fun addNewCategories(categories: Categories) {
-       noteDatabase.categoriesDao().insertCategories(categories)
+        noteDatabase.categoriesDao().insertCategories(categories)
         listCategories.add(categories)
         adapter.notifyDataSetChanged()
     }
@@ -74,7 +74,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
 
     @SuppressLint("NotifyDataSetChanged")
     private fun getData() {
-        viewModel.getLiveDataCategories(requireContext()).observe(viewLifecycleOwner){
+        viewModel.getLiveDataCategories(requireContext()).observe(viewLifecycleOwner) {
             listCategories.clear()
             listCategories.addAll(it)
             loadCategoriesToMenu(listCategories)
@@ -90,9 +90,14 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
             val categoriesGroup = categoriesGroupItem.subMenu
             categoriesGroup?.let {
                 it.clear()
-                it.add(Menu.NONE, R.id.editCategories, Menu.NONE, "Edit categories")
+                it.add(
+                    Menu.NONE,
+                    R.id.editCategories,
+                    Menu.NONE,
+                    getString(R.string.edit_categorized)
+                )
                     .setIcon(R.drawable.baseline_playlist_add_24)
-                it.add(Menu.NONE, 2311, Menu.NONE, "Uncategorized")
+                it.add(Menu.NONE, 2311, Menu.NONE, getString(R.string.uncategorized))
                     .setIcon(R.drawable.dont_tag)
                 listCategories.forEachIndexed { index, category ->
                     val itemId = Menu.FIRST + index
@@ -100,21 +105,20 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
                         ?.setIcon(R.drawable.tag)
                 }
             }
-        } else {
-            Log.e("CategoriesFragment", "categoriesGroupItem is null")
         }
     }
+
     private fun setUpRecyclerView() {
         viewBinding.recyclerViewCategories.setHasFixedSize(false)
         listCategories = ArrayList()
         val linearLayout = LinearLayoutManager(requireContext())
         viewBinding.recyclerViewCategories.layoutManager = linearLayout
-        adapter = AdapterListCategories(listCategories, object : InterfaceCompleteListener{
+        adapter = AdapterListCategories(listCategories, object : InterfaceCompleteListener {
             override fun onCompleteListener(note: Note) {
             }
 
             override fun onEditCategoriesListener(categories: Categories) {
-               showDialogConfirmEdit(categories)
+                showDialogConfirmEdit(categories)
             }
 
             override fun onDeleteCategoriesListener(categories: Categories) {
@@ -122,7 +126,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
             }
 
         })
-        viewBinding.recyclerViewCategories.adapter= adapter
+        viewBinding.recyclerViewCategories.adapter = adapter
     }
 
     private fun showDialogConfirmEdit(categories: Categories) {
@@ -150,37 +154,43 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
 
     private fun showDialogConfirmDelete(categories: Categories) {
         val dialog = AlertDialog.Builder(context)
-            .setTitle("Confirm")
-            .setMessage("Do you want to remove this selected notes? Notes from the category won't be deleted ?")
-            .setPositiveButton("Yes") { dialogInterface, _ ->
-                noteDatabase.categoriesDao().deleteNoteCategoriesByCategoryId(categories.idCategory!!)
-               noteDatabase.categoriesDao().deleteCategory(categories)
+            .setTitle(getString(R.string.confirm))
+            .setMessage(getString(R.string.title_confirm_remove_note))
+            .setPositiveButton(getString(R.string.Yes)) { dialogInterface, _ ->
+                noteDatabase.categoriesDao()
+                    .deleteNoteCategoriesByCategoryId(categories.idCategory!!)
+                noteDatabase.categoriesDao().deleteCategory(categories)
                 dialogInterface.cancel()
             }
-            .setNegativeButton("No") { dialogInterface, _ ->
+            .setNegativeButton(getString(R.string.No)) { dialogInterface, _ ->
                 dialogInterface.cancel()
             }
         dialog.show()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when(item.itemId){
+        when (item.itemId) {
             R.id.note -> {
                 onChangeToNoteFragment("All")
             }
+
             R.id.editCategories -> {
 
             }
+
             R.id.setting -> {
                 onChangeToSettingFragment()
             }
+
             R.id.delete -> {
                 onChangeToTrashFragment()
             }
-            2311 ->{
+
+            2311 -> {
                 onChangeToNoteFragment("Uncategorized")
             }
-            else ->{
+
+            else -> {
                 val menu = viewBinding.navView.menu
                 val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
                 if (categoriesGroupItem != null) {
@@ -218,7 +228,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         fragmentTrans.commit()
     }
 
-    private fun onChangeToNoteFragmentWithCategories(value : Categories) {
+    private fun onChangeToNoteFragmentWithCategories(value: Categories) {
         val noteFragment = NoteFragment()
         val bundle = Bundle()
         bundle.putSerializable("category", value)
@@ -228,7 +238,8 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         fragmentTrans.replace(R.id.mainLayout, noteFragment)
         fragmentTrans.commit()
     }
-    private fun onChangeToNoteFragment(value : String) {
+
+    private fun onChangeToNoteFragment(value: String) {
         val noteFragment = NoteFragment()
         val bundle = Bundle()
         bundle.putString("Type", value)

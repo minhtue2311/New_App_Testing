@@ -18,6 +18,7 @@ class Note(
     var label: String = ""
     var listCategories : String = ""
     var spannableString : String = ""
+    var isDelete : Boolean = false
     var isBold : Boolean = false
     var isItalic : Boolean = false
     var isUnderline : Boolean = false

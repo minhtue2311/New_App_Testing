@@ -1,4 +1,4 @@
-package com.example.myapplication.note.handleFormatString
+package com.example.myapplication.note.handle_format_string
 
 import android.text.Html
 import android.text.Spannable
