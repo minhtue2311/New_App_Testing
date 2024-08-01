@@ -2,9 +2,11 @@ package com.example.myapplication.note.options
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import java.io.BufferedReader
@@ -13,8 +15,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class ImportNote(private var activity: Activity, private var context : Context, private var onCompleteListener: InterfaceCompleteListener) {
-     fun readNoteFromFile(uri: Uri) {
+
+class ImportNote(private var activity: FragmentActivity, private var context : Context) {
+    fun openDocumentPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "text/plain"
+        activity.startActivityForResult(intent, 2)
+    }
+
+    fun readNoteFromFile(uri: Uri, onCompleteListener: InterfaceCompleteListener) {
         try {
             activity.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val reader = BufferedReader(InputStreamReader(inputStream))

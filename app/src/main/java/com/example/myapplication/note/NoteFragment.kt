@@ -7,13 +7,10 @@ import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -21,25 +18,25 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.R
 import com.example.myapplication.adapter.AdapterRecyclerViewNote
-import com.example.myapplication.categories.CategoriesFragment
 import com.example.myapplication.databinding.CustomLayoutDialogSortBinding
 import com.example.myapplication.databinding.LayoutNoteFragmentBinding
+import com.example.myapplication.menu_bar.ChangeFragmentFunctions
+import com.example.myapplication.menu_bar.MenuBarFunction
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceCompleteListener
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
-import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.note.note_view_model.NoteViewModel
-import com.example.myapplication.note.options.ImportNote
+import com.example.myapplication.note.options.ImportExportManager
 import com.example.myapplication.preferences.NoteStatusPreferences
-import com.example.myapplication.setting.SettingFragment
-import com.example.myapplication.trash.TrashFragment
 import com.google.android.material.navigation.NavigationView
 
 @SuppressLint("NotifyDataSetChanged")
@@ -55,11 +52,51 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
     private var listCategoriesForMenuBar: ArrayList<Categories> = ArrayList()
     private var category: Categories? = null
     private var type: String = "All"
+    private lateinit var importLauncher: ActivityResultLauncher<Intent>
+    private lateinit var exportLauncher: ActivityResultLauncher<Intent>
+    private lateinit var importExportManager: ImportExportManager
     override fun onCreate(savedInstanceState: Bundle?) {
         viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
         preferences = NoteStatusPreferences(requireContext())
         noteDatabase = NoteDatabase.getInstance(requireContext())
         statusSort = preferences.getStatusSortValues()
+        importLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.data
+                if (uri != null) {
+                    importExportManager.readNoteFromFile(uri, object : InterfaceCompleteListener{
+                        override fun onCompleteListener(note: Note) {
+                            noteDatabase.noteDao().insertNote(note)
+                            Toast.makeText(
+                                context,
+                                "${note.label} ${getString(R.string.file_has_imported)}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        override fun onEditCategoriesListener(categories: Categories) {
+
+                        }
+
+                        override fun onDeleteCategoriesListener(categories: Categories) {
+
+                        }
+
+                    })
+                }
+            }
+        }
+        exportLauncher =registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.data
+                if (uri != null) {
+                    importExportManager.saveListNoteToDocument(uri, listNote)
+                }
+            }
+        }
+        importExportManager = ImportExportManager(requireActivity(), requireContext())
+        importExportManager.setImportLauncher(importLauncher)
+        importExportManager.setExportLauncher(exportLauncher)
         super.onCreate(savedInstanceState)
     }
 
@@ -132,7 +169,7 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
         noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner) {
             if (it.isNotEmpty()) {
                 listCategoriesForMenuBar.addAll(it)
-                loadCategoriesToMenu(it)
+                MenuBarFunction().loadCategoriesToMenu(it, viewBinding.navView.menu, resources)
             }
         }
     }
@@ -183,63 +220,15 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
     private fun handleMenuItemClick(menuItem: MenuItem) {
         when (menuItem.itemId) {
             R.id.exportNote -> {
-                openDocumentTree()
+                importExportManager.openDocumentTreeForListNote(listNote)
             }
 
             R.id.importNote -> {
-                openDocumentPicker()
+                importExportManager.openDocumentPicker()
             }
 
             R.id.selectAllNote -> {
                 adapter.onAllSelected()
-            }
-        }
-    }
-
-    private fun openDocumentPicker() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.type = "text/plain"
-        startActivityForResult(intent, 2)
-    }
-
-    private fun openDocumentTree() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        startActivityForResult(intent, 1)
-    }
-
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = data?.data
-            if (uri != null) {
-                ExportNote(requireContext(), requireActivity()).saveListNoteToDocument(
-                    uri,
-                    listNote
-                )
-            }
-        } else if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = data?.data
-            if (uri != null) {
-                ImportNote(requireActivity(), requireContext(), object : InterfaceCompleteListener {
-                    override fun onCompleteListener(note: Note) {
-                        noteDatabase.noteDao().insertNote(note)
-                        Toast.makeText(
-                            requireContext(),
-                            "${note.label} ${getString(R.string.file_has_imported)}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    override fun onEditCategoriesListener(categories: Categories) {
-
-                    }
-
-                    override fun onDeleteCategoriesListener(categories: Categories) {
-
-                    }
-                }).readNoteFromFile(uri)
             }
         }
     }
@@ -504,20 +493,20 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
             R.id.note -> {
                 viewBinding.contentTxt.visibility = View.GONE
                 category = null
-                type = "All"
+                type = getString(R.string.all)
                 getNoteData()
             }
 
             R.id.editCategories -> {
-                onChangedToCategoriesFragment()
+                ChangeFragmentFunctions(requireActivity()).onChangedToCategoriesFragment()
             }
 
             R.id.delete -> {
-                onChangeToTrashFragment()
+                ChangeFragmentFunctions(requireActivity()).onChangeToTrashFragment()
             }
 
             R.id.setting -> {
-                onChangeToSettingFragment()
+                ChangeFragmentFunctions(requireActivity()).onChangeToSettingFragment()
             }
 
             2311 -> {
@@ -540,7 +529,7 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
                             selectedCategory?.let {
                                 //Handle action select category
                                 category = selectedCategory
-                                type = "category"
+                                type = getString(R.string.category)
                                 viewBinding.contentTxt.visibility = View.VISIBLE
                                 viewBinding.contentTxt.text = category!!.nameCategories
                                 getNoteData()
@@ -552,55 +541,5 @@ class NoteFragment : Fragment(), NavigationView.OnNavigationItemSelectedListener
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
-    }
-
-    private fun onChangeToSettingFragment() {
-        val settingFragment = SettingFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.add(R.id.mainLayout, settingFragment)
-        fragmentTrans.addToBackStack(null)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangeToTrashFragment() {
-        val trashFragment = TrashFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, trashFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangedToCategoriesFragment() {
-        val categoriesFragment = CategoriesFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, categoriesFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun loadCategoriesToMenu(listCategories: List<Categories>) {
-        val menu = viewBinding.navView.menu
-        val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
-
-        if (categoriesGroupItem != null) {
-            val categoriesGroup = categoriesGroupItem.subMenu
-            categoriesGroup?.let {
-                it.clear()
-                //Add Edit Categories Item Menu
-                it.add(
-                    Menu.NONE,
-                    R.id.editCategories,
-                    Menu.NONE,
-                    getString(R.string.edit_categorized)
-                )
-                    .setIcon(R.drawable.baseline_playlist_add_24)
-                //Add Uncategorized Item Menu
-                it.add(Menu.NONE, 2311, Menu.NONE, getString(R.string.uncategorized))
-                    .setIcon(R.drawable.dont_tag)
-                listCategories.forEachIndexed { index, category ->
-                    val itemId = Menu.FIRST + index
-                    it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
-                        ?.setIcon(R.drawable.tag)
-                }
-            }
-        }
     }
 }

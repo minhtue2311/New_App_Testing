@@ -22,6 +22,8 @@ import com.example.myapplication.adapter.AdapterListCategories
 import com.example.myapplication.categories.categories_model.CategoriesViewModel
 import com.example.myapplication.databinding.LayoutCategoriesBinding
 import com.example.myapplication.databinding.LayoutEditCategoryNameBinding
+import com.example.myapplication.menu_bar.ChangeFragmentFunctions
+import com.example.myapplication.menu_bar.MenuBarFunction
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
@@ -77,34 +79,12 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         viewModel.getLiveDataCategories(requireContext()).observe(viewLifecycleOwner) {
             listCategories.clear()
             listCategories.addAll(it)
-            loadCategoriesToMenu(listCategories)
+            MenuBarFunction().loadCategoriesToMenu(
+                listCategories,
+                viewBinding.navView.menu,
+                resources
+            )
             adapter.notifyDataSetChanged()
-        }
-    }
-
-    private fun loadCategoriesToMenu(listCategories: ArrayList<Categories>) {
-        val menu = viewBinding.navView.menu
-        val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
-
-        if (categoriesGroupItem != null) {
-            val categoriesGroup = categoriesGroupItem.subMenu
-            categoriesGroup?.let {
-                it.clear()
-                it.add(
-                    Menu.NONE,
-                    R.id.editCategories,
-                    Menu.NONE,
-                    getString(R.string.edit_categorized)
-                )
-                    .setIcon(R.drawable.baseline_playlist_add_24)
-                it.add(Menu.NONE, 2311, Menu.NONE, getString(R.string.uncategorized))
-                    .setIcon(R.drawable.dont_tag)
-                listCategories.forEachIndexed { index, category ->
-                    val itemId = Menu.FIRST + index
-                    it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
-                        ?.setIcon(R.drawable.tag)
-                }
-            }
         }
     }
 
@@ -171,7 +151,7 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.note -> {
-                onChangeToNoteFragment("All")
+                ChangeFragmentFunctions(requireActivity()).onChangeToNoteFragment(getString(R.string.all))
             }
 
             R.id.editCategories -> {
@@ -179,15 +159,15 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
             }
 
             R.id.setting -> {
-                onChangeToSettingFragment()
+                ChangeFragmentFunctions(requireActivity()).onChangeToSettingFragment()
             }
 
             R.id.delete -> {
-                onChangeToTrashFragment()
+                ChangeFragmentFunctions(requireActivity()).onChangeToTrashFragment()
             }
 
             2311 -> {
-                onChangeToNoteFragment("Uncategorized")
+                ChangeFragmentFunctions(requireActivity()).onChangeToNoteFragment(getString(R.string.uncategorized))
             }
 
             else -> {
@@ -202,7 +182,9 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
                             }
                             selectedCategory?.let {
                                 //Handle action select category
-                                onChangeToNoteFragmentWithCategories(selectedCategory)
+                                ChangeFragmentFunctions(requireActivity()).onChangeToNoteFragmentWithCategories(
+                                    selectedCategory
+                                )
                             }
                         }
                     }
@@ -211,41 +193,5 @@ class CategoriesFragment : Fragment(), NavigationView.OnNavigationItemSelectedLi
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
-    }
-
-    private fun onChangeToSettingFragment() {
-        val settingFragment = SettingFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.add(R.id.mainLayout, settingFragment)
-        fragmentTrans.addToBackStack(null)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangeToTrashFragment() {
-        val trashFragment = TrashFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, trashFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangeToNoteFragmentWithCategories(value: Categories) {
-        val noteFragment = NoteFragment()
-        val bundle = Bundle()
-        bundle.putSerializable("category", value)
-        bundle.putString("Type", "category")
-        noteFragment.arguments = bundle
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, noteFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangeToNoteFragment(value: String) {
-        val noteFragment = NoteFragment()
-        val bundle = Bundle()
-        bundle.putString("Type", value)
-        noteFragment.arguments = bundle
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, noteFragment)
-        fragmentTrans.commit()
     }
 }

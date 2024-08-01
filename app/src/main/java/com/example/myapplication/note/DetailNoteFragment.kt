@@ -9,7 +9,6 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -23,7 +22,6 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -37,6 +35,8 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import android.widget.SeekBar
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -57,7 +57,7 @@ import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.model.relation.NoteCategoryRef
 import com.example.myapplication.note.formatting_bar.FormattingBarFunctions
 import com.example.myapplication.note.handle_format_string.FormatString
-import com.example.myapplication.note.options.ExportNote
+import com.example.myapplication.note.options.ImportExportManager
 import com.example.myapplication.preferences.NoteStatusPreferences
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -69,8 +69,6 @@ import java.util.Locale
 import java.util.Stack
 import kotlin.reflect.KMutableProperty0
 
-
-private const val s1 = "Tap Twice To Edit"
 
 class DetailNoteFragment : Fragment() {
     private lateinit var viewBinding: LayoutDetailNoteBinding
@@ -91,6 +89,8 @@ class DetailNoteFragment : Fragment() {
     private var clickCount = 0
     private val doubleClickThreshold = 500L
     private val handler = Handler(Looper.getMainLooper())
+    private lateinit var exportLauncher: ActivityResultLauncher<Intent>
+    private lateinit var importExportManager: ImportExportManager
 
     //Variable for state formatting bar
     private var startIndex = 0
@@ -110,9 +110,18 @@ class DetailNoteFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         noteDatabase = NoteDatabase.getInstance(requireContext())
         preferences = NoteStatusPreferences(requireContext())
+        exportLauncher =registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.data
+                if (uri != null) {
+                    importExportManager.saveNoteToDocument(uri, note)
+                }
+            }
+        }
+        importExportManager = ImportExportManager(requireActivity(), requireContext())
+        importExportManager.setExportLauncher(exportLauncher)
         super.onCreate(savedInstanceState)
     }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -124,13 +133,67 @@ class DetailNoteFragment : Fragment() {
         getCategoriesData()
         getCategoriesForThisNote()
         initOriginalValueForEditText()
-        return viewBinding.root
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onResume() {
         viewBinding.detailFragmentLayout.setOnClickListener {
             //TO DO
+        }
+        viewBinding.editTextContent.setOnClickListener {
+            if (readMode) {
+                clickCount++
+                if (clickCount == 1) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.tap_twice_to_edit),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    handler.postDelayed({
+                        clickCount = 0
+                    }, doubleClickThreshold)
+                } else if (clickCount == 2) {
+                    readMode = false
+                    setReadOnlyMode()
+                    clickCount = 0
+                    handler.removeCallbacksAndMessages(null)
+                }
+            } else {
+                setUpBackgroundForItemInFormattingBar(viewBinding.boldButton, isBoldState)
+            }
+        }
+        viewBinding.detailFragmentLayout.setOnClickListener {
+            //TO DO
+        }
+        viewBinding.backFromEditMode.setOnClickListener {
+            backToHomeScreen()
+        }
+        viewBinding.backFromReadMode.setOnClickListener {
+            backToHomeScreen()
+        }
+        viewBinding.backFromSearch.setOnClickListener {
+            viewBinding.editTextContent.setText(valueBeforeSearch)
+            viewBinding.layoutTitle.visibility = View.VISIBLE
+            viewBinding.layoutSearchToolBar.visibility = View.GONE
+        }
+        viewBinding.txtSave.setOnClickListener {
+            handleSavingData()
+        }
+        viewBinding.optionsButton.setOnClickListener { view ->
+            showPopupMenu(view)
+        }
+        viewBinding.optionsButtonReadMode.setOnClickListener { view ->
+            showPopupMenuInReadMode(view)
+        }
+        viewBinding.btnDownload.setOnClickListener {
+            importExportManager.openDocumentTreeForNote(note)
+        }
+        viewBinding.btnChangeToEditMode.setOnClickListener {
+            readMode = false
+            setReadOnlyMode()
+        }
+        viewBinding.btnUndo.setOnClickListener {
+            undoFunction(rootValue)
+        }
+        viewBinding.clearFormattingButton.setOnClickListener {
+            viewBinding.linearLayoutFormatingBar.visibility = View.GONE
+            preferences.putStatusFormattingBar(false)
         }
         viewBinding.linearLayoutDetailNote.viewTreeObserver.addOnGlobalLayoutListener {
             val r = Rect()
@@ -208,65 +271,9 @@ class DetailNoteFragment : Fragment() {
                 lastEndSelection = -1
             }
         }
-        viewBinding.editTextContent.setOnClickListener {
-            if (readMode) {
-                clickCount++
-                if (clickCount == 1) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.tap_twice_to_edit),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    handler.postDelayed({
-                        clickCount = 0
-                    }, doubleClickThreshold)
-                } else if (clickCount == 2) {
-                    readMode = false
-                    setReadOnlyMode()
-                    clickCount = 0
-                    handler.removeCallbacksAndMessages(null)
-                }
-            } else {
-                setUpBackgroundForItemInFormattingBar(viewBinding.boldButton, isBoldState)
-            }
-        }
-        viewBinding.backFromEditMode.setOnClickListener {
-            backToHomeScreen()
-        }
-        viewBinding.backFromReadMode.setOnClickListener {
-            backToHomeScreen()
-        }
-        viewBinding.backFromSearch.setOnClickListener {
-            viewBinding.editTextContent.setText(valueBeforeSearch)
-            viewBinding.layoutTitle.visibility = View.VISIBLE
-            viewBinding.layoutSearchToolBar.visibility = View.GONE
-        }
-        viewBinding.txtSave.setOnClickListener {
-            handleSavingData()
-        }
-        viewBinding.optionsButton.setOnClickListener { view ->
-            showPopupMenu(view)
-        }
-        viewBinding.optionsButtonReadMode.setOnClickListener { view ->
-            showPopupMenuInReadMode(view)
-        }
-        viewBinding.btnDownload.setOnClickListener {
-            openDocumentTree()
-        }
-        viewBinding.btnChangeToEditMode.setOnClickListener {
-            readMode = false
-            setReadOnlyMode()
-        }
-        viewBinding.btnUndo.setOnClickListener {
-            undoFunction(rootValue)
-        }
-        viewBinding.clearFormattingButton.setOnClickListener {
-            viewBinding.linearLayoutFormatingBar.visibility = View.GONE
-            preferences.putStatusFormattingBar(false)
-        }
-        handleOnClickItemFormattingBar()
         handleEditTextContent()
-        super.onResume()
+        handleOnClickItemFormattingBar()
+        return viewBinding.root
     }
 
     private fun updateFormattingButtonsState(start: Int, end: Int) {
@@ -695,7 +702,7 @@ class DetailNoteFragment : Fragment() {
                         )
                         val isStrikethrough = strikethroughSpans.isNotEmpty()
                         if (!isStrikethrough) {
-                            FormattingBarFunctions().applyUnderline(
+                            FormattingBarFunctions().applyStrikethrough(
                                 viewBinding.editTextContent,
                                 lastStartSelection,
                                 lastEndSelection
@@ -1181,7 +1188,7 @@ class DetailNoteFragment : Fragment() {
             }
 
             R.id.exportTxtFiles -> {
-                openDocumentTree()
+                importExportManager.openDocumentTreeForNote(note)
             }
 
             R.id.switchToReadMode -> {
@@ -1372,23 +1379,6 @@ class DetailNoteFragment : Fragment() {
         }
         return result
     }
-
-    private fun openDocumentTree() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        startActivityForResult(intent, 1)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = data?.data
-            if (uri != null) {
-                ExportNote(requireContext(), requireActivity()).saveNoteToDocument(uri, note)
-            }
-        }
-    }
-
     private fun showDialogPickColor() {
         val dialog = Dialog(requireContext())
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)

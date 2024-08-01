@@ -1,6 +1,7 @@
 package com.example.myapplication.note.options
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.widget.Toast
@@ -8,6 +9,10 @@ import com.example.myapplication.model.Note
 import java.io.OutputStream
 
 class ExportNote(private var context : Context, private var activity: Activity) {
+    fun openDocumentTree(){
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        activity.startActivityForResult(intent, 1)
+    }
     fun saveNoteToDocument(uri: Uri, note : Note?) {
         val contentResolver = activity.contentResolver // Su dung content resolver de truy cap tai nguyen ben ngoai ung dung
         val docUri = DocumentsContract.buildDocumentUriUsingTree(

@@ -22,13 +22,6 @@ class SettingFragment : Fragment() {
     ): View? {
         viewBinding = LayoutSettingBinding.inflate(inflater, container, false)
         handleStatusMoveToTrash()
-        return viewBinding.root
-    }
-    private fun handleStatusMoveToTrash(){
-        viewBinding.switchButton.isChecked = preferences.getStatusTrashValues()
-    }
-
-    override fun onResume() {
         viewBinding.switchButton.setOnCheckedChangeListener { _, b ->
             if(b){
                 preferences.putStatusTrashValues(true)
@@ -39,6 +32,12 @@ class SettingFragment : Fragment() {
         viewBinding.backFromSetting.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
         }
-        super.onResume()
+        viewBinding.layoutSetting.setOnClickListener {
+            //TO DO
+        }
+        return viewBinding.root
+    }
+    private fun handleStatusMoveToTrash(){
+        viewBinding.switchButton.isChecked = preferences.getStatusTrashValues()
     }
 }

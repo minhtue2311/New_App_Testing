@@ -94,4 +94,8 @@
     <string name="delete_successfully">Delete Successfully</string>
     <string name="title_confirm_restore_note">Do you want to restore this selected notes ?</string>
     <string name="restore_one_note">Restore 1 note</string>
+    <string name="all">All</string>
+    <string name="category">category</string>
+    <string name="errorCreatingDocument">Error creating document</string>
+    <string name="errorOpeningStream">Error opening output stream</string>
 </resources>

@@ -18,6 +18,8 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +28,8 @@ import com.example.myapplication.adapter.AdapterRecyclerViewNote
 import com.example.myapplication.categories.CategoriesFragment
 import com.example.myapplication.databinding.LayoutActionItemTrashBinding
 import com.example.myapplication.databinding.LayoutTrashFragmentBinding
+import com.example.myapplication.menu_bar.ChangeFragmentFunctions
+import com.example.myapplication.menu_bar.MenuBarFunction
 import com.example.myapplication.model.Categories
 import com.example.myapplication.model.Note
 import com.example.myapplication.model.NoteDatabase
@@ -33,6 +37,7 @@ import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.note.NoteFragment
 import com.example.myapplication.note.note_view_model.NoteViewModel
 import com.example.myapplication.note.options.ExportNote
+import com.example.myapplication.note.options.ImportExportManager
 import com.example.myapplication.setting.SettingFragment
 import com.google.android.material.navigation.NavigationView
 
@@ -43,10 +48,22 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
     private lateinit var viewModel: NoteViewModel
     private lateinit var listTrash: ArrayList<Note>
     private lateinit var adapter: AdapterRecyclerViewNote
+    private lateinit var importExportManager: ImportExportManager
+    private lateinit var exportLauncher: ActivityResultLauncher<Intent>
     private var listTrashSelected: ArrayList<Note> = ArrayList()
     override fun onCreate(savedInstanceState: Bundle?) {
         noteDatabase = NoteDatabase.getInstance(requireContext())
         viewModel = ViewModelProvider(this)[NoteViewModel::class.java]
+        exportLauncher =registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.data
+                if (uri != null) {
+                    importExportManager.saveListNoteToDocument(uri, listTrash)
+                }
+            }
+        }
+        importExportManager = ImportExportManager(requireActivity(), requireContext())
+        importExportManager.setExportLauncher(exportLauncher)
         super.onCreate(savedInstanceState)
     }
 
@@ -80,6 +97,10 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         viewBinding.optionButton.setOnClickListener { view ->
             showPopupMenu(view)
         }
+        viewBinding.backFromSelectedNote.setOnClickListener {
+            viewBinding.layoutMainToolBar.visibility = View.VISIBLE
+            viewBinding.layoutSelectedNote.visibility = View.GONE
+        }
         getCategoriesData()
         setUpRecyclerView()
         getTrashData()
@@ -104,7 +125,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             }
 
             R.id.export_trash -> {
-                openDocumentTree()
+                importExportManager.openDocumentTreeForListNote(listTrash)
             }
 
             R.id.clean -> {
@@ -137,25 +158,6 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                 dialogInterface.cancel()
             }
         dialog.show()
-    }
-
-    private fun openDocumentTree() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        startActivityForResult(intent, 1)
-    }
-
-    @Deprecated("Deprecated in Java")    //Tra ve ket qua la uri cua thu muc duoc chon
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = data?.data
-            if (uri != null) {
-                ExportNote(requireContext(), requireActivity()).saveListNoteToDocument(
-                    uri,
-                    listTrash
-                )
-            }
-        }
     }
 
     private fun restoreTrash(trash: Note) {
@@ -266,7 +268,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         noteDatabase.categoriesDao().getAllCategories().observe(viewLifecycleOwner) {
             if (it.isNotEmpty()) {
                 listCategories.addAll(it)
-                loadCategoriesToMenu(it)
+                MenuBarFunction().loadCategoriesToMenu(listCategories,viewBinding.navView.menu, resources)
             }
         }
     }
@@ -280,40 +282,14 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             adapter.notifyDataSetChanged()
         }
     }
-
-    private fun loadCategoriesToMenu(it: List<Categories>?) {
-        val menu = viewBinding.navView.menu
-        val categoriesGroupItem = menu.findItem(R.id.categoriesGroup)
-
-        if (categoriesGroupItem != null) {
-            val categoriesGroup = categoriesGroupItem.subMenu
-
-            categoriesGroup?.let {
-                it.clear()
-                //Add Edit Categories Item Menu
-                it.add(Menu.NONE, R.id.editCategories, Menu.NONE, getString(R.string.edit_categorized))
-                    .setIcon(R.drawable.baseline_playlist_add_24)
-                //Add Uncategorized Item Menu
-                it.add(Menu.NONE, 2311, Menu.NONE, getString(R.string.uncategorized))
-                    .setIcon(R.drawable.dont_tag)
-
-                listCategories.forEachIndexed { index, category ->
-                    val itemId = Menu.FIRST + index
-                    it.add(R.id.categoriesGroup, itemId, Menu.NONE, category.nameCategories)
-                        ?.setIcon(R.drawable.tag)
-                }
-            }
-        }
-    }
-
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.note -> {
-                onChangeToNoteFragment("All")
+                ChangeFragmentFunctions(requireActivity()).onChangeToNoteFragment(getString(R.string.all))
             }
 
             R.id.editCategories -> {
-                onChangedToCategoriesFragment()
+                ChangeFragmentFunctions(requireActivity()).onChangedToCategoriesFragment()
             }
 
             R.id.delete -> {
@@ -321,11 +297,11 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
             }
 
             R.id.setting -> {
-                onChangeToSettingFragment()
+               ChangeFragmentFunctions(requireActivity()).onChangeToSettingFragment()
             }
 
             2311 -> {
-                onChangeToNoteFragment("Uncategorized")
+               ChangeFragmentFunctions(requireActivity()).onChangeToNoteFragment(getString(R.string.uncategorized))
             }
 
             else -> {
@@ -340,7 +316,7 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
                             }
                             selectedCategory?.let {
                                 //Handle action select category
-                                onChangeToNoteFragmentWithCategories(selectedCategory)
+                                ChangeFragmentFunctions(requireActivity()).onChangeToNoteFragmentWithCategories(selectedCategory)
                             }
                         }
                     }
@@ -349,41 +325,5 @@ class TrashFragment : Fragment(), NavigationView.OnNavigationItemSelectedListene
         }
         viewBinding.drawerLayout.closeDrawer(viewBinding.navView)
         return true
-    }
-
-    private fun onChangeToNoteFragmentWithCategories(value: Categories) {
-        val noteFragment = NoteFragment()
-        val bundle = Bundle()
-        bundle.putSerializable("category", value)
-        bundle.putString("Type", "category")
-        noteFragment.arguments = bundle
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, noteFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangeToNoteFragment(value: String) {
-        val noteFragment = NoteFragment()
-        val bundle = Bundle()
-        bundle.putString("Type", value)
-        noteFragment.arguments = bundle
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, noteFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangedToCategoriesFragment() {
-        val categoriesFragment = CategoriesFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.replace(R.id.mainLayout, categoriesFragment)
-        fragmentTrans.commit()
-    }
-
-    private fun onChangeToSettingFragment() {
-        val settingFragment = SettingFragment()
-        val fragmentTrans = requireActivity().supportFragmentManager.beginTransaction()
-        fragmentTrans.add(R.id.mainLayout, settingFragment)
-        fragmentTrans.addToBackStack(null)
-        fragmentTrans.commit()
     }
 }
