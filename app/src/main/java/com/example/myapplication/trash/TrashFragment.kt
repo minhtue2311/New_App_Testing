@@ -36,7 +36,6 @@ import com.example.myapplication.model.NoteDatabase
 import com.example.myapplication.model.interface_model.InterfaceOnClickListener
 import com.example.myapplication.note.NoteFragment
 import com.example.myapplication.note.note_view_model.NoteViewModel
-import com.example.myapplication.note.options.ExportNote
 import com.example.myapplication.note.options.ImportExportManager
 import com.example.myapplication.setting.SettingFragment
 import com.google.android.material.navigation.NavigationView

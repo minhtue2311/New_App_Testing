@@ -64,11 +64,11 @@ class ImportExportManager(
                 noteModel.label = fileName
                 onCompleteListener.onCompleteListener(noteModel)
             } ?: run {
-                Toast.makeText(context, "Error opening file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.errorOpeningStream), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "${context.getString(R.string.error_loading)} ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -91,7 +91,7 @@ class ImportExportManager(
             Toast.makeText(context, "Export ${listNote.size} txt File", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Error saving files: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "${context.getString(R.string.error_saving)} ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -145,7 +145,7 @@ class ImportExportManager(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "Error saving file: ${e.message}", Toast.LENGTH_SHORT)
+                Toast.makeText(context, "${context.getString(R.string.error_saving)} ${e.message}", Toast.LENGTH_SHORT)
                     .show()
             }
         } else {
@@ -185,7 +185,7 @@ class ImportExportManager(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "Error saving file: ${e.message}", Toast.LENGTH_SHORT)
+                Toast.makeText(context, "${context.getString(R.string.error_saving)} ${e.message}", Toast.LENGTH_SHORT)
                     .show()
             }
         }

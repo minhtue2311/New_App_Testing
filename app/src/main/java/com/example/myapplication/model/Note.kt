@@ -23,7 +23,7 @@ class Note(
     var isItalic : Boolean = false
     var isUnderline : Boolean = false
     var isStrikethrough : Boolean = false
-    var textSize : Float = 18f
+    var textSize : Int = 18
     var foregroundColorText : String = ""
     var backgroundColorText : String = ""
     constructor(parcel: Parcel) : this(
@@ -41,7 +41,7 @@ class Note(
         isItalic = parcel.readByte() != 0.toByte()
         isUnderline = parcel.readByte() != 0.toByte()
         isStrikethrough = parcel.readByte() != 0.toByte()
-        textSize = parcel.readFloat()
+        textSize = parcel.readInt()
         foregroundColorText = parcel.readString() ?: ""
         backgroundColorText = parcel.readString() ?: ""
     }
