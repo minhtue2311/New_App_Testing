@@ -1,6 +1,8 @@
 [versions]
 agp = "8.5.1"
 compiler = "1.1.1"
+htmlspanner = "0.4.7.2"
+htmlspannerVersion = "0.4"
 kotlin = "1.9.0"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -24,6 +26,8 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomCompiler" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomCompiler" }
 compiler = { module = "android.arch.persistence.room:compiler", version.ref = "compiler" }
+htmlspanner = { module = "com.github.NightWhistler:HtmlSpanner", version.ref = "htmlspanner" }
+htmlspanner-v04 = { module = "com.github.NightWhistler:HtmlSpanner", version.ref = "htmlspannerVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

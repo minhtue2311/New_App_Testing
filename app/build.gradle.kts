@@ -62,4 +62,5 @@ dependencies {
 
     implementation(libs.sdp.android)
     implementation(libs.ssp.android)
+    implementation("org.sufficientlysecure:html-textview:4.0")
 }

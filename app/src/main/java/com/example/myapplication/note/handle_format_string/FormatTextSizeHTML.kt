@@ -1,75 +1,47 @@
 package com.example.myapplication.note.handle_format_string
 
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.text.Editable
 import android.text.Html
 import android.text.Spannable
 import android.text.style.AbsoluteSizeSpan
+import android.text.style.ReplacementSpan
 import org.xml.sax.XMLReader
+import java.util.Stack
+import java.util.regex.Pattern
 
 class FormatTextSizeHTML : Html.TagHandler {
 
-    override fun handleTag(
-        opening: Boolean,
-        tag: String?,
-        output: Editable?,
-        xmlReader: XMLReader?
-    ) {
-        if (tag.equals("font", ignoreCase = true)) {
+    override fun handleTag(opening: Boolean, tag: String?, output: Editable?, xmlReader: XMLReader?) {
+        if (tag.equals("span", ignoreCase = true)) {
             if (opening) {
-                val attributes = getAttributes(xmlReader)
-                val size = attributes["size"]?.toIntOrNull() ?: 16
-                startFont(output, size)
+                val start = output?.length ?: 0
+                output?.setSpan(StartTagMarker(), start, start, Spannable.SPAN_MARK_MARK)
             } else {
-                endFont(output)
+                val end = output?.length ?: 0
+                val spanMarkers = output?.getSpans(0, end, StartTagMarker::class.java)
+                if (spanMarkers != null && spanMarkers.isNotEmpty()) {
+                    val start = output.getSpanStart(spanMarkers[0])
+                    output.removeSpan(spanMarkers[0])
+
+                    // Xác định font-size
+                    val spanContent = output.subSequence(start, end).toString()
+                    val fontSize = parseFontSize(spanContent)
+
+                    // Áp dụng AbsoluteSizeSpan nếu xác định được font-size
+                    if (fontSize != null) {
+                        output.setSpan(AbsoluteSizeSpan(fontSize, true), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                }
             }
         }
     }
 
-    private fun startFont(text: Editable?, size: Int) {
-        val len = text?.length ?: return
-        text.setSpan(AbsoluteSizeSpan(size), len, len, Spannable.SPAN_MARK_MARK)
+    private fun parseFontSize(text: String): Int? {
+        val matcher = Pattern.compile("font-size:\\s*(\\d+)px", Pattern.CASE_INSENSITIVE).matcher(text)
+        return if (matcher.find()) matcher.group(1)?.toInt() else null
     }
 
-    private fun endFont(text: Editable?) {
-        val len = text?.length ?: return
-        val obj = getLast(text, AbsoluteSizeSpan::class.java)
-        val where = text.getSpanStart(obj)
-
-        text.removeSpan(obj)
-
-        if (where != len) {
-            text.setSpan(obj, where, len, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
-    }
-
-    private fun getAttributes(xmlReader: XMLReader?): Map<String, String> {
-        val attributes = mutableMapOf<String, String>()
-        try {
-            val elementField = xmlReader?.javaClass?.getDeclaredField("theNewElement")
-            elementField?.isAccessible = true
-            val element = elementField?.get(xmlReader)
-            val attsField = element?.javaClass?.getDeclaredField("theAtts")
-            attsField?.isAccessible = true
-            val atts = attsField?.get(element)
-            val dataField = atts?.javaClass?.getDeclaredField("data")
-            dataField?.isAccessible = true
-            val data = dataField?.get(atts) as? Array<String>
-            val lengthField = atts?.javaClass?.getDeclaredField("length")
-            lengthField?.isAccessible = true
-            val len = lengthField?.get(atts) as? Int ?: 0
-
-            for (i in 0 until len) {
-                attributes[data?.get(i * 5 + 1) ?: ""] = data?.get(i * 5 + 4) ?: ""
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return attributes
-    }
-
-    private fun getLast(text: Editable?, kind: Class<*>): Any? {
-        val objs = text?.getSpans(0, text.length, kind)
-        return if (objs?.isNotEmpty() == true) objs[objs.size - 1] else null
-    }
+    private class StartTagMarker
 }

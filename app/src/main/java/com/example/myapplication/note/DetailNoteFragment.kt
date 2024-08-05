@@ -800,7 +800,7 @@ class DetailNoteFragment : Fragment() {
         val titleValue = viewBinding.editTextTitle.text.toString().trim()
         val contentValue = viewBinding.editTextContent.text.toString().trim()
 
-        if (titleValue != note?.title || contentValue != note?.content  || note?.isBold != isBoldState || note?.isUnderline != isUnderlineState || note?.isItalic != isItalicState || note?.isStrikethrough != isStrikethroughState || note?.textSize != textSizeValue || note?.backgroundColorText != backgroundColor || note?.foregroundColorText != colorText
+        if (titleValue != note?.title || contentValue != note?.content || note?.spannableString != getSpannableStringFromEditText(viewBinding.editTextContent)  || note?.isBold != isBoldState || note?.isUnderline != isUnderlineState || note?.isItalic != isItalicState || note?.isStrikethrough != isStrikethroughState || note?.textSize != textSizeValue || note?.backgroundColorText != backgroundColor || note?.foregroundColorText != colorText
         ) {
             val spannableStringResult = getSpannableStringFromEditText(viewBinding.editTextContent)
             val dateString = getCurrentDateString()
